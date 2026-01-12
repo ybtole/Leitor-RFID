@@ -1,5 +1,33 @@
+Arduino Mega 2560:
+SDA - 53
+SCK - 52
+MOSI - 51
+MISO - 50
+GND - GND
+RST - 5
+3.3V - 3.3V
+
+RC522	UNO / Nano:
+SDA -	10
+SCK	- 13
+MOSI- 11
+MISO - 12
+RST -	9
+3.3V - 3.3V
+GND - GND
+
+RC522	Leonardo / Micro:
+SDA -	10
+SCK	- 15
+MOSI - 16
+MISO - 14
+RST	- 9
+3.3V - 3.3V
+GND	- GND
+
+
 # Leitor-RFID 🇧🇷
-Necessário um Arduino e um Leitor RFID.
+Necessário um Arduino e um Leitor RFID. Instalar NodeJS, CH340G caso necessário (Arduino Mega 2560) e library do MFRC522.
 
 VCC - Fornece energia ao módulo. Esta tensão pode ser de 2,5 a 3,3 volts. Você pode conectar a alimentação do módulo (VCC)  à tensão de 3,3 V do Arduino. Entretanto, ao conectar a tensão de 5V do Arduino, provavelmente irá danificar o módulo.
 
@@ -23,7 +51,7 @@ Claro — tradução direta, sem enrolar:
 
 # RFID Reader 🇺🇸
 
-An Arduino and an RFID Reader are required.
+An Arduino and an RFID Reader are required. Download NodeJS, CH340G driver if needed (Arduino Mega 2560) and MFRC522 library.
 
 **VCC** — Supplies power to the module. This voltage can be from 2.5 to 3.3 volts. You can connect the module’s power (VCC) to the Arduino’s 3.3 V pin. However, if you connect it to the Arduino’s 5 V pin, you will likely damage the module.
 
