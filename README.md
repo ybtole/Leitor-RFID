@@ -1,4 +1,4 @@
-# Leitor-RFID
+# Leitor-RFID 🇧🇷
 Necessário um Arduino e um Leitor RFID.
 
 VCC - Fornece energia ao módulo. Esta tensão pode ser de 2,5 a 3,3 volts. Você pode conectar a alimentação do módulo (VCC)  à tensão de 3,3 V do Arduino. Entretanto, ao conectar a tensão de 5V do Arduino, provavelmente irá danificar o módulo.
@@ -16,3 +16,27 @@ MOSI (Master Out Slave In) - É a entrada SPI para o módulo RC522.
 SCK (Serial Clock) - Aceita os pulsos de clock fornecidos pelo mestre do barramento SPI, ou seja, o Arduino.
 
 SS / SDA / Rx - Atua como entrada de sinal quando a interface SPI está habilitada, como dados seriais quando a interface I2C está habilitada e como entrada de dados seriais quando a interface UART está habilitada.
+
+Claro — tradução direta, sem enrolar:
+
+---
+
+# RFID Reader 🇺🇸
+
+An Arduino and an RFID Reader are required.
+
+**VCC** — Supplies power to the module. This voltage can be from 2.5 to 3.3 volts. You can connect the module’s power (VCC) to the Arduino’s 3.3 V pin. However, if you connect it to the Arduino’s 5 V pin, you will likely damage the module.
+
+**RST** — This is a reset or power-down input. When this pin is held low, the module enters power-down mode. In this state the oscillator is turned off and the input pins are disconnected from the outside world. The module is reset on the rising edge of the signal.
+
+**GND** — This is the ground pin and must be connected to the Arduino’s GND pin.
+
+**IRQ** — This is an interrupt pin that notifies the microcontroller when an RFID tag is nearby.
+
+**MISO / SCL / TX** — Acts as master-in-slave-out when the SPI interface is enabled, as a serial clock when the I²C interface is enabled, and as a serial data output when the UART interface is enabled.
+
+**MOSI (Master Out Slave In)** — This is the SPI input to the RC522 module.
+
+**SCK (Serial Clock)** — Receives the clock pulses provided by the SPI bus master, i.e., the Arduino.
+
+**SS / SDA / Rx** — Acts as a signal input when the SPI interface is enabled, as serial data when the I²C interface is enabled, and as a serial data input when the UART interface is enabled.
