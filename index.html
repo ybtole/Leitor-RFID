@@ -47,7 +47,6 @@
         let temperaturaAtual = "--°C";
         let cidadeAtual = "Localizando...";
 
-        // --- BUSCA CLIMA E NOME DA CIDADE POR GPS ---
         async function buscarClima() {
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(async (position) => {
@@ -76,7 +75,6 @@
             }
         }
 
-        // --- RELÓGIO MINIMALISTA (TAMANHO AJUSTADO) ---
         function atualizarRelogio() {
             const agora = new Date();
             const dataStr = agora.toLocaleDateString('pt-BR');
@@ -85,10 +83,9 @@
             const iconUrl = "https://cdn-icons-png.flaticon.com/128/2932/2932445.png";
 
             if (document.body.classList.contains('mode-user')) {
-                // Estilo Minimalista Cinza - Tamanho aumentado para 1.4rem
                 titulo.style.fontSize = "1.4rem"; 
                 titulo.style.color = "#888"; 
-                titulo.style.fontWeight = "500"; // Um pouco mais de peso para leitura
+                titulo.style.fontWeight = "500";
                 titulo.style.display = "flex";
                 titulo.style.alignItems = "center";
                 titulo.style.justifyContent = "center";
@@ -221,4 +218,5 @@
         });
     </script>
 </body>
+
 </html>
