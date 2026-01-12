@@ -1,30 +1,11 @@
 Arduino Mega 2560:
-SDA - 53
-SCK - 52
-MOSI - 51
-MISO - 50
-GND - GND
-RST - 5
-3.3V - 3.3V
+SDA - 53 / SCK - 52 / MOSI - 51 / MISO - 50 / GND - GND / RST - 5 / 3.3V - 3.3V
 
 RC522	UNO / Nano:
-SDA -	10
-SCK	- 13
-MOSI- 11
-MISO - 12
-RST -	9
-3.3V - 3.3V
-GND - GND
+SDA -	10 / SCK - 13 / MOSI- 11 / MISO - 12 / RST -	9 / 3.3V - 3.3V / GND - GND
 
 RC522	Leonardo / Micro:
-SDA -	10
-SCK	- 15
-MOSI - 16
-MISO - 14
-RST	- 9
-3.3V - 3.3V
-GND	- GND
-
+SDA -	10 / SCK	- 15 / MOSI - 16 / MISO - 14 / RST	- 9 / 3.3V - 3.3V / GND	- GND
 
 # Leitor-RFID 🇧🇷
 Necessário um Arduino e um Leitor RFID. Instalar NodeJS, CH340G caso necessário (Arduino Mega 2560) e library do MFRC522.
