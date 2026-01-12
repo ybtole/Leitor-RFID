@@ -1,0 +1,10 @@
+{
+  "name": "painel-rfid",
+  "version": "1.0.0",
+  "main": "servidor.js",
+  "dependencies": {
+    "express": "^4.18.2",
+    "serialport": "^10.5.0",
+    "socket.io": "^4.6.1"
+  }
+}
