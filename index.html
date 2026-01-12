@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Monitoramento RFID - Painel de Controle</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body class="light-theme mode-admin">
+
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>Histórico</h2>
+            <button onclick="toggleSidebar()" class="close-btn">&times;</button>
+        </div>
+        <div id="lista-historico" class="sidebar-content"></div>
+    </div>
+
+    <div class="controles-topo">
+        <button onclick="toggleSidebar()" class="btn-acao btn-admin-only">☰ Histórico</button>
+        <button onclick="toggleTheme()" class="btn-acao" id="theme-btn">🌙 Tema Escuro</button>
+        <button onclick="toggleView()" class="btn-acao btn-view" id="view-btn">👤 Usuário</button>
+        
+        <select id="filtro-bloco" class="btn-admin-only select-bloco" onchange="renderizarTudo()">
+            <option value="TODOS">Todos os Blocos</option>
+            <option value="BLOCO 1">Bloco 1</option>
+            <option value="ADMINISTRATIVO">Administrativo</option>
+            <option value="BLOCO A">Bloco A</option>
+            <option value="BLOCO D">Bloco D</option>
+        </select>
+    </div>
+
+    <div class="container">
+        <header id="cabecalho-principal">
+            <h1 id="titulo-pagina">Painel Administrativo</h1>
+            <p id="subtitulo-pagina">Gerenciamento técnico em tempo real</p>
+        </header>
+        <div id="grid-principal"></div>
+    </div>
+
+    <script>
+        const socket = io();
+        let todosOsDados = [];
+        let scrollInterval = null;
+        let inactivityTimeout = null;
+        let clockInterval = null;
+        let temperaturaAtual = "--°C";
+        let cidadeAtual = "Localizando...";
+
+        // --- BUSCA CLIMA E NOME DA CIDADE POR GPS ---
+        async function buscarClima() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    
+                    try {
+                        const resClima = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                        const dataClima = await resClima.json();
+                        const temp = Math.round(dataClima.current_weather.temperature);
+                        temperaturaAtual = `${temp}°C`;
+
+                        const resGeo = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                        const dataGeo = await resGeo.json();
+                        cidadeAtual = dataGeo.address.city || dataGeo.address.town || dataGeo.address.village || "Local desconhecido";
+                        
+                        atualizarRelogio(); 
+                    } catch (e) { 
+                        temperaturaAtual = "Erro";
+                        cidadeAtual = "API Offline";
+                    }
+                }, () => { 
+                    temperaturaAtual = "GPS Off"; 
+                    cidadeAtual = "Sem Permissão";
+                });
+            }
+        }
+
+        // --- RELÓGIO MINIMALISTA (TAMANHO AJUSTADO) ---
+        function atualizarRelogio() {
+            const agora = new Date();
+            const dataStr = agora.toLocaleDateString('pt-BR');
+            const horaStr = agora.toLocaleTimeString('pt-BR');
+            const titulo = document.getElementById('titulo-pagina');
+            const iconUrl = "https://cdn-icons-png.flaticon.com/128/2932/2932445.png";
+
+            if (document.body.classList.contains('mode-user')) {
+                // Estilo Minimalista Cinza - Tamanho aumentado para 1.4rem
+                titulo.style.fontSize = "1.4rem"; 
+                titulo.style.color = "#888"; 
+                titulo.style.fontWeight = "500"; // Um pouco mais de peso para leitura
+                titulo.style.display = "flex";
+                titulo.style.alignItems = "center";
+                titulo.style.justifyContent = "center";
+                titulo.style.gap = "12px";
+                titulo.style.letterSpacing = "0.5px";
+
+                const isInverted = document.body.classList.contains('dark-theme') ? "invert(1)" : "invert(0.4)";
+
+                titulo.innerHTML = `
+                    ${dataStr} — ${horaStr} — 
+                    <span style="display: flex; align-items: center; margin-left: 5px;">
+                        <img src="${iconUrl}" style="width: 24px; height: 24px; filter: ${isInverted}; margin-right: 10px;">
+                        ${temperaturaAtual} em ${cidadeAtual}
+                    </span>`;
+            } else {
+                titulo.style.fontSize = ""; 
+                titulo.style.color = "";
+                titulo.style.fontWeight = "";
+                titulo.style.display = "block";
+                titulo.innerText = "Painel Administrativo";
+            }
+        }
+
+        function toggleView() {
+            const body = document.body;
+            const btn = document.getElementById('view-btn');
+            const subtitulo = document.getElementById('subtitulo-pagina');
+
+            if (body.classList.contains('mode-admin')) {
+                body.classList.replace('mode-admin', 'mode-user');
+                btn.innerText = "🛠️ Admin";
+                subtitulo.style.display = 'none'; 
+                buscarClima(); 
+                atualizarRelogio();
+                clockInterval = setInterval(atualizarRelogio, 1000); 
+                resetInactivityTimer();
+            } else {
+                body.classList.replace('mode-user', 'mode-admin');
+                btn.innerText = "👤 Usuário";
+                clearInterval(clockInterval);
+                subtitulo.style.display = 'block'; 
+                stopAutoScroll();
+                clearTimeout(inactivityTimeout);
+            }
+            renderizarTudo();
+        }
+
+        function startAutoScroll() {
+            if (scrollInterval) return;
+            scrollInterval = setInterval(() => {
+                const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
+                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
+                if (scrollPos >= totalHeight - 5) {
+                    stopAutoScroll();
+                    window.scrollTo({ top: 0, behavior: 'instant' });
+                    setTimeout(() => { if(document.body.classList.contains('mode-user')) resetInactivityTimer(); }, 1500);
+                } else { window.scrollBy(0, 1); }
+            }, 30);
+        }
+
+        function stopAutoScroll() { clearInterval(scrollInterval); scrollInterval = null; }
+
+        function resetInactivityTimer() {
+            stopAutoScroll();
+            clearTimeout(inactivityTimeout);
+            if (document.body.classList.contains('mode-user')) {
+                inactivityTimeout = setTimeout(startAutoScroll, 3000);
+            }
+        }
+
+        window.addEventListener('mousemove', resetInactivityTimer);
+        window.addEventListener('keydown', resetInactivityTimer);
+        window.addEventListener('wheel', resetInactivityTimer);
+
+        function toggleSidebar() { document.getElementById("sidebar").classList.toggle("open"); }
+        
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            document.body.classList.toggle('light-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            document.getElementById('theme-btn').innerText = isDark ? "☀️ Tema Claro" : "🌙 Tema Escuro";
+            if (document.body.classList.contains('mode-user')) atualizarRelogio();
+        }
+
+        function renderizarTudo() {
+            const container = document.getElementById('grid-principal');
+            const isUser = document.body.classList.contains('mode-user');
+            container.innerHTML = "";
+
+            if (isUser) {
+                const grupos = {};
+                todosOsDados.forEach(d => {
+                    if (!grupos[d.bloco]) grupos[d.bloco] = [];
+                    grupos[d.bloco].push(d);
+                });
+                Object.keys(grupos).sort().forEach(bloco => {
+                    const secao = document.createElement('div');
+                    secao.className = 'secao-bloco';
+                    secao.innerHTML = `<h2 class="titulo-bloco-user">${bloco}</h2><div class="grid-user"></div>`;
+                    const grid = secao.querySelector('.grid-user');
+                    grupos[bloco].forEach(data => {
+                        grid.innerHTML += `<div class="card-user animar-entrada"><h3>${data.nome}</h3><p>Sala: <strong>${data.sala}</strong></p></div>`;
+                    });
+                    container.appendChild(secao);
+                });
+            } else {
+                const filtro = document.getElementById('filtro-bloco').value;
+                const gridAdmin = document.createElement('div');
+                gridAdmin.className = 'grid-admin';
+                todosOsDados.forEach(data => {
+                    if (filtro === "TODOS" || data.bloco === filtro) {
+                        gridAdmin.innerHTML += `<div class="card-admin animar-entrada"><span>ID: ${data.id}</span><h3>${data.nome}</h3><p>${data.sala}</p><p>${data.bloco}</p></div>`;
+                    }
+                });
+                container.appendChild(gridAdmin);
+            }
+        }
+
+        socket.on('atualizar-lista', (data) => {
+            const index = todosOsDados.findIndex(d => d.id === data.id);
+            if (index !== -1) todosOsDados[index] = data;
+            else todosOsDados.push(data);
+
+            const item = document.createElement('div');
+            item.className = 'hist-item animar-entrada';
+            item.innerHTML = `<strong>${data.nome}</strong> movido para ${data.bloco}<br><small>${data.hora}</small>`;
+            document.getElementById('lista-historico').prepend(item);
+
+            renderizarTudo();
+        });
+    </script>
+</body>
+</html>
