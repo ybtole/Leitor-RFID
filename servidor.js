@@ -8,17 +8,16 @@ const readline = require('readline');
 
 app.use(express.static(__dirname));
 
-// Configuração da Porta Serial (Arduino)
+// Porta Serial (Arduino)
 const port = new SerialPort({ path: 'COM3', baudRate: 9600 }, (err) => {
-    if (err) console.log("Aviso: Arduino não detectado na COM3.");
+    if (err) console.log("Aviso: Arduino not detected on COM3.");
 });
 const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
 
-// Interface do terminal melhorada para permitir Backspace e Colar
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
-    terminal: true // Ativa suporte a comandos de terminal
+    terminal: true
 });
 
 function processarEntrada(entrada) {
@@ -28,15 +27,14 @@ function processarEntrada(entrada) {
 
     let idFinal, nome, sala, bloco;
 
-    // --- LÓGICA DE ALTERNÂNCIA (Unifica as Tags RFID) ---
     if (idBruto === "A6AE75F8") {
-        idFinal = "ID_PROF_MARCOS"; // ID interno único
+        idFinal = "ID_PROF_MARCOS";
         nome = "PROFESSOR MARCOS";
         sala = "Laboratório de Redes";
         bloco = "BLOCO D";
     } 
     else if (idBruto === "CBEA540C") {
-        idFinal = "ID_PROF_MARCOS"; // Mesmo ID interno
+        idFinal = "ID_PROF_MARCOS";
         nome = "PROFESSOR MARCOS";
         sala = "Sala de Reuniões";
         bloco = "BLOCO A";
@@ -51,7 +49,7 @@ function processarEntrada(entrada) {
     }
 
     const infoFinal = {
-        id: idFinal, // O Front-end só vê este ID
+        id: idFinal,
         nome: nome,
         sala: sala,
         bloco: bloco,
@@ -62,11 +60,11 @@ function processarEntrada(entrada) {
     io.emit('atualizar-lista', infoFinal);
 }
 
-// Vincula tanto o sensor quanto o teclado à mesma função
 parser.on('data', (data) => processarEntrada(data));
 rl.on('line', (line) => processarEntrada(line));
 
 http.listen(3000, () => {
     console.log('\n--- SISTEMA ATIVO (Porta 3000) ---');
     console.log('RFID ou Terminal (ID|NOME|SALA|BLOCO) prontos.\n');
+
 });
