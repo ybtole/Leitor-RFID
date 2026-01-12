@@ -27,13 +27,13 @@ function processarEntrada(entrada) {
 
     let idFinal, nome, sala, bloco;
 
-    if (idBruto === "A6AE75F8") {
+    if (idBruto === "A6AE75F8") { // Troque pelo ID do seu cartão // Change with the ID of your card chip
         idFinal = "ID_PROF_MARCOS";
         nome = "PROFESSOR MARCOS";
         sala = "Laboratório de Redes";
         bloco = "BLOCO D";
     } 
-    else if (idBruto === "CBEA540C") {
+    else if (idBruto === "CBEA540C") { //Troque pelo ID do seu cartão // Change with the ID of your card chip 
         idFinal = "ID_PROF_MARCOS";
         nome = "PROFESSOR MARCOS";
         sala = "Sala de Reuniões";
@@ -65,6 +65,6 @@ rl.on('line', (line) => processarEntrada(line));
 
 http.listen(3000, () => {
     console.log('\n--- SISTEMA ATIVO (Porta 3000) ---');
-    console.log('RFID ou Terminal (ID|NOME|SALA|BLOCO) prontos.\n');
-
+    console.log('RFID / Terminal (ID|NOME|SALA|BLOCO).\n');
 });
+
