@@ -47,6 +47,7 @@
         let temperaturaAtual = "--°C";
         let cidadeAtual = "Localizando...";
 
+        // --- BUSCA CLIMA E CIDADE POR GPS ---
         async function buscarClima() {
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(async (position) => {
@@ -54,11 +55,13 @@
                     const lon = position.coords.longitude;
                     
                     try {
+                        // Busca Clima
                         const resClima = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
                         const dataClima = await resClima.json();
                         const temp = Math.round(dataClima.current_weather.temperature);
                         temperaturaAtual = `${temp}°C`;
 
+                        // Busca Nome da Cidade (Geocoding)
                         const resGeo = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
                         const dataGeo = await resGeo.json();
                         cidadeAtual = dataGeo.address.city || dataGeo.address.town || dataGeo.address.village || "Local desconhecido";
@@ -75,64 +78,73 @@
             }
         }
 
+        // --- ATUALIZAÇÃO DO CABEÇALHO (RELOGIO/CLIMA) ---
         function atualizarRelogio() {
+            const titulo = document.getElementById('titulo-pagina');
+            if (!document.body.classList.contains('mode-user')) return;
+
             const agora = new Date();
             const dataStr = agora.toLocaleDateString('pt-BR');
             const horaStr = agora.toLocaleTimeString('pt-BR');
-            const titulo = document.getElementById('titulo-pagina');
             const iconUrl = "https://cdn-icons-png.flaticon.com/128/2932/2932445.png";
 
-            if (document.body.classList.contains('mode-user')) {
-                titulo.style.fontSize = "1.4rem"; 
-                titulo.style.color = "#888"; 
-                titulo.style.fontWeight = "500";
-                titulo.style.display = "flex";
-                titulo.style.alignItems = "center";
-                titulo.style.justifyContent = "center";
-                titulo.style.gap = "12px";
-                titulo.style.letterSpacing = "0.5px";
+            // Estilo Minimalista Ajustado (Fonte 1.4rem)
+            titulo.style.fontSize = "1.4rem"; 
+            titulo.style.color = "#888"; 
+            titulo.style.fontWeight = "500";
+            titulo.style.display = "flex";
+            titulo.style.alignItems = "center";
+            titulo.style.justifyContent = "center";
+            titulo.style.gap = "12px";
 
-                const isInverted = document.body.classList.contains('dark-theme') ? "invert(1)" : "invert(0.4)";
+            const isInverted = document.body.classList.contains('dark-theme') ? "invert(1)" : "invert(0.4)";
 
-                titulo.innerHTML = `
-                    ${dataStr} — ${horaStr} — 
-                    <span style="display: flex; align-items: center; margin-left: 5px;">
-                        <img src="${iconUrl}" style="width: 24px; height: 24px; filter: ${isInverted}; margin-right: 10px;">
-                        ${temperaturaAtual} em ${cidadeAtual}
-                    </span>`;
-            } else {
-                titulo.style.fontSize = ""; 
-                titulo.style.color = "";
-                titulo.style.fontWeight = "";
-                titulo.style.display = "block";
-                titulo.innerText = "Painel Administrativo";
-            }
+            titulo.innerHTML = `
+                ${dataStr} — ${horaStr} — 
+                <span style="display: flex; align-items: center; margin-left: 5px;">
+                    <img src="${iconUrl}" style="width: 24px; height: 24px; filter: ${isInverted}; margin-right: 10px;">
+                    ${temperaturaAtual} em ${cidadeAtual}
+                </span>`;
         }
 
+        // --- ALTERNÂNCIA DE TELAS ---
         function toggleView() {
             const body = document.body;
             const btn = document.getElementById('view-btn');
+            const titulo = document.getElementById('titulo-pagina');
             const subtitulo = document.getElementById('subtitulo-pagina');
 
             if (body.classList.contains('mode-admin')) {
+                // MUDANDO PARA MODO USUÁRIO
                 body.classList.replace('mode-admin', 'mode-user');
                 btn.innerText = "🛠️ Admin";
                 subtitulo.style.display = 'none'; 
+                
                 buscarClima(); 
                 atualizarRelogio();
+                if (clockInterval) clearInterval(clockInterval);
                 clockInterval = setInterval(atualizarRelogio, 1000); 
+                
                 resetInactivityTimer();
             } else {
+                // MUDANDO PARA MODO ADMIN
                 body.classList.replace('mode-user', 'mode-admin');
                 btn.innerText = "👤 Usuário";
-                clearInterval(clockInterval);
                 subtitulo.style.display = 'block'; 
+                
+                clearInterval(clockInterval);
+                titulo.innerHTML = "Painel Administrativo"; 
+                titulo.style.fontSize = ""; 
+                titulo.style.color = "";
+                titulo.style.display = "block";
+
                 stopAutoScroll();
                 clearTimeout(inactivityTimeout);
             }
             renderizarTudo();
         }
 
+        // --- LOGICA DE SCROLL AUTOMÁTICO ---
         function startAutoScroll() {
             if (scrollInterval) return;
             scrollInterval = setInterval(() => {
@@ -160,6 +172,7 @@
         window.addEventListener('keydown', resetInactivityTimer);
         window.addEventListener('wheel', resetInactivityTimer);
 
+        // --- TEMAS E SIDEBAR ---
         function toggleSidebar() { document.getElementById("sidebar").classList.toggle("open"); }
         
         function toggleTheme() {
@@ -170,12 +183,14 @@
             if (document.body.classList.contains('mode-user')) atualizarRelogio();
         }
 
-        function renderizarTudo() {
+        // --- RENDERIZAÇÃO DOS CARDS ---
+       function renderizarTudo() {
             const container = document.getElementById('grid-principal');
             const isUser = document.body.classList.contains('mode-user');
             container.innerHTML = "";
 
             if (isUser) {
+                // ... (mantenha a lógica do modo usuário como está)
                 const grupos = {};
                 todosOsDados.forEach(d => {
                     if (!grupos[d.bloco]) grupos[d.bloco] = [];
@@ -192,18 +207,27 @@
                     container.appendChild(secao);
                 });
             } else {
+                // MODO ADMIN ATUALIZADO COM RÓTULOS
                 const filtro = document.getElementById('filtro-bloco').value;
                 const gridAdmin = document.createElement('div');
                 gridAdmin.className = 'grid-admin';
+                
                 todosOsDados.forEach(data => {
                     if (filtro === "TODOS" || data.bloco === filtro) {
-                        gridAdmin.innerHTML += `<div class="card-admin animar-entrada"><span>ID: ${data.id}</span><h3>${data.nome}</h3><p>${data.sala}</p><p>${data.bloco}</p></div>`;
+                        gridAdmin.innerHTML += `
+                            <div class="card-admin animar-entrada">
+                                <span>ID: ${data.id}</span>
+                                <h3>${data.nome}</h3>
+                                <p><strong>Sala:</strong> ${data.sala}</p>
+                                <p><strong>Bloco:</strong> ${data.bloco}</p>
+                            </div>`;
                     }
                 });
                 container.appendChild(gridAdmin);
             }
         }
 
+        // --- SOCKET.IO ---
         socket.on('atualizar-lista', (data) => {
             const index = todosOsDados.findIndex(d => d.id === data.id);
             if (index !== -1) todosOsDados[index] = data;
@@ -218,5 +242,4 @@
         });
     </script>
 </body>
-
 </html>
