@@ -1,14 +1,19 @@
-#Arduino Mega 2560:
+ ### 🇧🇷 ⚠️ - Instalar NodeJS. Caso tenha um Arduino e um leitor RFID, instalar Arduino IDE, MFRC522 (Biblioteca) 
+ ### 🇺🇸 ⚠️ - Download NodeJS. If you have an Arduino and a RFID reader, download Arduino IDE, MFRC522 (Library)
+
+
+# Passo a Passo: Clone esse Repositório ou Baixe os arquivos, após já ter baixado o NodeJS, abra o CMD na pasta e digite "npm install", após a instalação e não aconteça nenhum erro, escreva "node servidor.js"
+
+### Arduino Mega 2560:
 SDA - 53 / SCK - 52 / MOSI - 51 / MISO - 50 / GND - GND / RST - 5 / 3.3V - 3.3V
 
-#RC522	UNO / Nano:
+### RC522	UNO / Nano:
 SDA -	10 / SCK - 13 / MOSI- 11 / MISO - 12 / RST -	9 / 3.3V - 3.3V / GND - GND
 
-#RC522	Leonardo / Micro:
+### RC522	Leonardo / Micro:
 SDA -	10 / SCK	- 15 / MOSI - 16 / MISO - 14 / RST	- 9 / 3.3V - 3.3V / GND	- GND
 
 # Leitor-RFID 🇧🇷
-Necessário um Arduino e um Leitor RFID. Instalar NodeJS, CH340G caso necessário (Arduino Mega 2560) e library do MFRC522.
 
 VCC - Fornece energia ao módulo. Esta tensão pode ser de 2,5 a 3,3 volts. Você pode conectar a alimentação do módulo (VCC)  à tensão de 3,3 V do Arduino. Entretanto, ao conectar a tensão de 5V do Arduino, provavelmente irá danificar o módulo.
 
@@ -28,7 +33,7 @@ SS / SDA / Rx - Atua como entrada de sinal quando a interface SPI está habilita
 
 Claro — tradução direta, sem enrolar:
 
----
+------
 
 # RFID Reader 🇺🇸
 
