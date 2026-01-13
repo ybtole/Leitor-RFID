@@ -17,6 +17,8 @@ SDA -	10 / SCK - 13 / MOSI- 11 / MISO - 12 / RST -	9 / 3.3V - 3.3V / GND - GND
 ### RC522	Leonardo / Micro:
 SDA -	10 / SCK	- 15 / MOSI - 16 / MISO - 14 / RST	- 9 / 3.3V - 3.3V / GND	- GND
 
+---
+
 # Leitor-RFID 🇧🇷
 
 VCC - Fornece energia ao módulo. Esta tensão pode ser de 2,5 a 3,3 volts. Você pode conectar a alimentação do módulo (VCC)  à tensão de 3,3 V do Arduino. Entretanto, ao conectar a tensão de 5V do Arduino, provavelmente irá danificar o módulo.
@@ -34,10 +36,6 @@ MOSI (Master Out Slave In) - É a entrada SPI para o módulo RC522.
 SCK (Serial Clock) - Aceita os pulsos de clock fornecidos pelo mestre do barramento SPI, ou seja, o Arduino.
 
 SS / SDA / Rx - Atua como entrada de sinal quando a interface SPI está habilitada, como dados seriais quando a interface I2C está habilitada e como entrada de dados seriais quando a interface UART está habilitada.
-
-Claro — tradução direta, sem enrolar:
-
-------
 
 # RFID Reader 🇺🇸
 
