@@ -55,16 +55,14 @@
                     const lon = position.coords.longitude;
                     
                     try {
-                        // Busca Clima
                         const resClima = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
                         const dataClima = await resClima.json();
                         const temp = Math.round(dataClima.current_weather.temperature);
                         temperaturaAtual = `${temp}°C`;
 
-                        // Busca Nome da Cidade (Geocoding)
                         const resGeo = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
                         const dataGeo = await resGeo.json();
-                        cidadeAtual = dataGeo.address.city || dataGeo.address.town || dataGeo.address.village || "Local desconhecido";
+                        cidadeAtual = dataGeo.address.city || dataGeo.address.town || dataGeo.address.village || "Localidade Atual";
                         
                         atualizarRelogio(); 
                     } catch (e) { 
@@ -88,7 +86,6 @@
             const horaStr = agora.toLocaleTimeString('pt-BR');
             const iconUrl = "https://cdn-icons-png.flaticon.com/128/2932/2932445.png";
 
-            // Estilo Minimalista Ajustado (Fonte 1.4rem)
             titulo.style.fontSize = "1.4rem"; 
             titulo.style.color = "#888"; 
             titulo.style.fontWeight = "500";
@@ -115,7 +112,6 @@
             const subtitulo = document.getElementById('subtitulo-pagina');
 
             if (body.classList.contains('mode-admin')) {
-                // MUDANDO PARA MODO USUÁRIO
                 body.classList.replace('mode-admin', 'mode-user');
                 btn.innerText = "🛠️ Admin";
                 subtitulo.style.display = 'none'; 
@@ -127,7 +123,6 @@
                 
                 resetInactivityTimer();
             } else {
-                // MUDANDO PARA MODO ADMIN
                 body.classList.replace('mode-user', 'mode-admin');
                 btn.innerText = "👤 Usuário";
                 subtitulo.style.display = 'block'; 
@@ -184,13 +179,12 @@
         }
 
         // --- RENDERIZAÇÃO DOS CARDS ---
-       function renderizarTudo() {
+        function renderizarTudo() {
             const container = document.getElementById('grid-principal');
             const isUser = document.body.classList.contains('mode-user');
             container.innerHTML = "";
 
             if (isUser) {
-                // ... (mantenha a lógica do modo usuário como está)
                 const grupos = {};
                 todosOsDados.forEach(d => {
                     if (!grupos[d.bloco]) grupos[d.bloco] = [];
@@ -202,12 +196,15 @@
                     secao.innerHTML = `<h2 class="titulo-bloco-user">${bloco}</h2><div class="grid-user"></div>`;
                     const grid = secao.querySelector('.grid-user');
                     grupos[bloco].forEach(data => {
-                        grid.innerHTML += `<div class="card-user animar-entrada"><h3>${data.nome}</h3><p>Sala: <strong>${data.sala}</strong></p></div>`;
+                        grid.innerHTML += `
+                            <div class="card-user animar-entrada">
+                                <h3>${data.nome}</h3>
+                                <p>Sala: <strong>${data.sala}</strong></p>
+                            </div>`;
                     });
                     container.appendChild(secao);
                 });
             } else {
-                // MODO ADMIN ATUALIZADO COM RÓTULOS
                 const filtro = document.getElementById('filtro-bloco').value;
                 const gridAdmin = document.createElement('div');
                 gridAdmin.className = 'grid-admin';
@@ -216,7 +213,10 @@
                     if (filtro === "TODOS" || data.bloco === filtro) {
                         gridAdmin.innerHTML += `
                             <div class="card-admin animar-entrada">
-                                <span>ID: ${data.id}</span>
+                                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#888; margin-bottom:8px;">
+                                    <span>ID: ${data.id}</span>
+                                    <span style="background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:4px;">🕒 ${data.hora || '--:--'}</span>
+                                </div>
                                 <h3>${data.nome}</h3>
                                 <p><strong>Sala:</strong> ${data.sala}</p>
                                 <p><strong>Bloco:</strong> ${data.bloco}</p>
@@ -240,6 +240,8 @@
 
             renderizarTudo();
         });
+
+        window.onload = () => { renderizarTudo(); };
     </script>
 </body>
 </html>

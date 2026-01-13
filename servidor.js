@@ -8,18 +8,14 @@ const readline = require('readline');
 
 app.use(express.static(__dirname));
 
-// Porta Serial (Arduino)
-const port = new SerialPort({ path: 'COM3', baudRate: 9600 }, (err) => {
-    if (err) console.log("Aviso: Arduino not detected on COM3.");
-});
-const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
-
+// Configuração do Terminal (para simular sem RFID)
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
     terminal: true
 });
 
+// --- FUNÇÃO DE PROCESSAMENTO DE DADOS (SUA LÓGICA) ---
 function processarEntrada(entrada) {
     const partes = entrada.trim().split('|');
     let idBruto = partes[0].toUpperCase();
@@ -27,13 +23,14 @@ function processarEntrada(entrada) {
 
     let idFinal, nome, sala, bloco;
 
-    if (idBruto === "A6AE75F8") { // Troque pelo ID do seu cartão // Change with the ID of your card chip
+    // Lógica específica para os seus cartões
+    if (idBruto === "A6AE75F8") { 
         idFinal = "ID_PROF_MARCOS";
         nome = "PROFESSOR MARCOS";
         sala = "Laboratório de Redes";
         bloco = "BLOCO D";
     } 
-    else if (idBruto === "CBEA540C") { //Troque pelo ID do seu cartão // Change with the ID of your card chip 
+    else if (idBruto === "CBEA540C") { 
         idFinal = "ID_PROF_MARCOS";
         nome = "PROFESSOR MARCOS";
         sala = "Sala de Reuniões";
@@ -53,18 +50,51 @@ function processarEntrada(entrada) {
         nome: nome,
         sala: sala,
         bloco: bloco,
-        hora: new Date().toLocaleTimeString('pt-BR')
+        hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
     };
 
-    console.log(`[EVENTO] ${infoFinal.nome} registrado em ${infoFinal.bloco}`);
+    console.log(`[EVENTO] ${infoFinal.nome} registrado em ${infoFinal.bloco} às ${infoFinal.hora}`);
     io.emit('atualizar-lista', infoFinal);
 }
 
-parser.on('data', (data) => processarEntrada(data));
+// --- FUNÇÃO PARA DETECTAR E CONECTAR ARDUINO AUTOMATICAMENTE ---
+async function iniciarConexaoSerial() {
+    try {
+        const ports = await SerialPort.list();
+        
+        // Filtro para encontrar o Arduino
+        const portaArduino = ports.find(p => 
+            p.manufacturer?.includes('Arduino') || 
+            p.pnpId?.includes('VID_2341') ||
+            p.friendlyName?.includes('USB-SERIAL') ||
+            p.path.includes('COM') // Tenta portas COM se nada mais for achado
+        );
+
+        if (portaArduino) {
+            console.log(`✅ Arduino encontrado na porta: ${portaArduino.path}`);
+            const port = new SerialPort({
+                path: portaArduino.path,
+                baudRate: 9600
+            });
+
+            const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
+            parser.on('data', (data) => processarEntrada(data));
+            
+            port.on('error', (err) => console.log('Erro na porta Serial:', err.message));
+        } else {
+            console.log("⚠️ Nenhum Arduino detectado. O sistema aceitará apenas comandos via Terminal.");
+        }
+    } catch (err) {
+        console.error("Erro ao listar portas:", err);
+    }
+}
+
+// Escuta o Terminal
 rl.on('line', (line) => processarEntrada(line));
 
+// Inicia o Servidor e a busca pelo Arduino
 http.listen(3000, () => {
     console.log('\n--- SISTEMA ATIVO (Porta 3000) ---');
-    console.log('RFID / Terminal (ID|NOME|SALA|BLOCO).\n');
+    console.log('RFID conectado ou Terminal (Formato: ID|NOME|SALA|BLOCO)');
+    iniciarConexaoSerial();
 });
-
