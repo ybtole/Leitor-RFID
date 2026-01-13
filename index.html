@@ -5,6 +5,19 @@
     <title>Monitoramento RFID - Painel de Controle</title>
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
+    <style>
+        /* Pequeno ajuste para as tags de bloco no histórico */
+        .tag-bloco {
+            background: rgba(0,0,0,0.1);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .dark-theme .tag-bloco {
+            background: rgba(255,255,255,0.1);
+        }
+    </style>
 </head>
 <body class="light-theme mode-admin">
 
@@ -23,8 +36,8 @@
         
         <select id="filtro-bloco" class="btn-admin-only select-bloco" onchange="renderizarTudo()">
             <option value="TODOS">Todos os Blocos</option>
-            <option value="BLOCO 1">Bloco 11</option>
-            <option value="ADMINISTRATIVO">Administrativo</option>
+            <option value="BLOCO 1">Bloco 1</option>
+            <option value="BLOCO 2">Bloco 2</option>
             <option value="BLOCO A">Bloco A</option>
             <option value="BLOCO D">Bloco D</option>
         </select>
@@ -39,9 +52,9 @@
     </div>
 
     <script>
-        const socket = io({ 
-    reconnection: false
-});
+        // Configuração do Socket com tratamento de erro
+        const socket = io({ reconnection: true });
+        
         let todosOsDados = [];
         let scrollInterval = null;
         let inactivityTimeout = null;
@@ -229,22 +242,41 @@
             }
         }
 
-        // --- SOCKET.IO ---
+        // --- SOCKET.IO COM LÓGICA DE ATUALIZAÇÃO DINÂMICA ---
         socket.on('atualizar-lista', (data) => {
-            const index = todosOsDados.findIndex(d => d.id === data.id);
-            if (index !== -1) todosOsDados[index] = data;
-            else todosOsDados.push(data);
+            // Se o servidor não mandar bloco, definimos um padrão para não quebrar o código
+            if(!data.bloco) data.bloco = "SEM BLOCO";
 
+            const index = todosOsDados.findIndex(d => d.id === data.id);
+            if (index !== -1) {
+                todosOsDados[index] = data; // Atualiza se já existir
+            } else {
+                todosOsDados.push(data); // Adiciona se for novo
+            }
+
+            // Adiciona ao Histórico Lateral
             const item = document.createElement('div');
             item.className = 'hist-item animar-entrada';
-            item.innerHTML = `<strong>${data.nome}</strong> movido para ${data.bloco}<br><small>${data.hora}</small>`;
-            document.getElementById('lista-historico').prepend(item);
+            item.innerHTML = `
+                <strong>${data.nome}</strong> movido para <span class="tag-bloco">${data.bloco}</span>
+                <br><small>${data.hora}</small>
+            `;
+            const listaHist = document.getElementById('lista-historico');
+            listaHist.prepend(item);
 
+            // Atualiza o visual
             renderizarTudo();
+
+            // Se o usuário estiver inativo na tela de Usuário, o scroll continua
+            if (document.body.classList.contains('mode-user')) {
+                resetInactivityTimer();
+            }
         });
 
-        window.onload = () => { renderizarTudo(); };
+        window.onload = () => { 
+            buscarClima();
+            renderizarTudo(); 
+        };
     </script>
 </body>
-
 </html>
