@@ -1,8 +1,12 @@
- ### 🇧🇷 ⚠️ - Instalar NodeJS. Caso tenha um Arduino e um leitor RFID, instalar Arduino IDE, MFRC522 (Biblioteca) 
- ### 🇺🇸 ⚠️ - Download NodeJS. If you have an Arduino and a RFID reader, download Arduino IDE, MFRC522 (Library)
+🇧🇷 ⚠️ - Instalar NodeJS. Caso tenha um Arduino e um leitor RFID, instalar Arduino IDE, MFRC522 (Biblioteca) 
 
+🇺🇸 ⚠️ - Download NodeJS. If you have an Arduino and a RFID reader, download Arduino IDE, MFRC522 (Library)
 
-# Passo a Passo: Clone esse Repositório ou Baixe os arquivos, após já ter baixado o NodeJS, abra o CMD na pasta e digite "npm install", após a instalação e não aconteça nenhum erro, escreva "node servidor.js"
+---
+#### Passo a Passo: Clone ou baixe os arquivos, após já ter baixado o NodeJS, abra o CMD na pasta e digite "npm install", caso "node_modules" apareça, escreva "node servidor.js"
+
+#### Step to Step: Clone or Download the files. After you download NodeJS, open CMD at the folder and type "npm install",if "node_modules" folder appear after the installation, type "node servidor.js"
+---
 
 ### Arduino Mega 2560:
 SDA - 53 / SCK - 52 / MOSI - 51 / MISO - 50 / GND - GND / RST - 5 / 3.3V - 3.3V
