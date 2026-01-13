@@ -39,7 +39,9 @@
     </div>
 
     <script>
-        const socket = io();
+        const socket = io({ 
+    reconnection: false
+});
         let todosOsDados = [];
         let scrollInterval = null;
         let inactivityTimeout = null;
@@ -245,5 +247,3 @@
     </script>
 </body>
 </html>
-
-<!-- Test -->
