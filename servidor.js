@@ -104,6 +104,6 @@ rl.on('line', (line) => processarEntrada(line));
 // Inicia o Servidor e a busca pelo Arduino
 http.listen(3000, () => {
     console.log('\n--- SISTEMA ATIVO (Porta 3000) ---');
-    console.log('Envie um ID para ver o sorteio de bloco em tempo real.');
+    console.log('Envie um ID via terminal seguindo o formato: ID|NOME|SALA|BLOCO .');
     iniciarConexaoSerial();
 });
