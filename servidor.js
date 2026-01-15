@@ -91,7 +91,7 @@ async function iniciarConexaoSerial() {
             
             port.on('error', (err) => console.log('Erro na porta Serial:', err.message));
         } else {
-            console.log("⚠️ Nenhum Arduino detectado (COM1 ignorada). Use o Terminal para simular.");
+            console.log("⚠️ Nenhum Arduino detectado. Use o Terminal para simular.");
         }
     } catch (err) {
         console.error("Erro ao listar portas:", err);
