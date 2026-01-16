@@ -8,6 +8,8 @@
 #### Step to Step: Clone or Download the files. After you download NodeJS, open CMD at the folder and type "npm install",if "node_modules" folder appear after the installation, type "node servidor.js" to start local server
 ---
 
+🤖 Where to connect the pins? / Onde Colocar os pinos?
+
 ### Arduino Mega 2560:
 SDA - 53 / SCK - 52 / MOSI - 51 / MISO - 50 / GND - GND / RST - 5 / 3.3V - 3.3V
 
