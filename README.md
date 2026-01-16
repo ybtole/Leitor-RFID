@@ -3,9 +3,9 @@
 🇺🇸 ⚠️ - Download NodeJS. If you have an Arduino and a RFID reader, download Arduino IDE, MFRC522 (Library)
 
 ---
-#### Passo a Passo: Clone ou baixe os arquivos, após já ter baixado o NodeJS, abra o CMD na pasta e digite "npm install", caso "node_modules" apareça, escreva "node servidor.js" para iniciar o server local
+#### Passo a Passo: Clone ou baixe os arquivos, após já ter baixado o NodeJS, abra o CMD na pasta e digite "npm install", caso "node_modules" apareça, escreva "node servidor.js" para iniciar o server local. (Se as setas e backpace não funcionarem, execute o server como winpty node servidor.js)
 
-#### Step to Step: Clone or Download the files. After you download NodeJS, open CMD at the folder and type "npm install",if "node_modules" folder appear after the installation, type "node servidor.js" to start local server
+#### Step to Step: Clone or Download the files. After you download NodeJS, open CMD at the folder and type "npm install",if "node_modules" folder appear after the installation, type "node servidor.js" to start local server (If the arrow-keys and backspace don't work, use winpty node servidor.js)
 ---
 
 # 🤖 Where to connect the pins? / Onde Colocar os pinos?
