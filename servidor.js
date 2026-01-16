@@ -1,3 +1,9 @@
+/* * Copyright (c) 2026 [ybtole]. Todos os direitos reservados.
+ * * É estritamente proibida a reprodução, distribuição ou revenda deste código,
+ * total ou parcial, sem a autorização prévia e por escrito do autor.
+ * Este software é fornecido para fins [Ex: Acadêmicos/Pessoais].
+*/
+
 const express = require('express');
 const app = express();
 const http = require('http').createServer(app);
