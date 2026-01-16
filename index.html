@@ -216,16 +216,18 @@
                     grupos[b].push(d);
                 });
 
-                Object.keys(grupos).sort().forEach(id => {
+                Object.keys(grupos).sort((a, b) => a.localeCompare(b, undefined, { numeric: true })).forEach(id => {
                     const secao = document.createElement('div');
                     secao.className = 'secao-bloco';
                     secao.innerHTML = `<h2 class="titulo-bloco-user">BLOCO ${id}</h2><div class="grid-user"></div>`;
                     const grid = secao.querySelector('.grid-user');
+                    
                     grupos[id].forEach(data => {
                         grid.innerHTML += `<div class="card-user animar-entrada"><img src="img/${data.id}.jpg" onerror="this.src='https://i.pravatar.cc/150?u=${data.id}'" style="width:120px; height:120px; flex-shrink: 0; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;"><div><h3 style="margin:0;font-size:1.2rem;">${data.nome}</h3><p style="margin:5px 0 0 0;">Sala: <strong>${data.sala}</strong></p></div></div>`;
                     });
+                    
                     container.appendChild(secao);
-                });
+            });
             } else {
                 // No modo Admin, exibe todos os cards com opção de filtro
                 const filtro = document.getElementById('filtro-bloco').value.replace("BLOCO", "").trim();
