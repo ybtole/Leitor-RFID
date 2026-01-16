@@ -5,61 +5,16 @@
     <title>Monitoramento RFID - Painel de Controle</title>
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
-    <style>
-        /* CABEÇALHO EM LINHA ÚNICA */
-        #titulo-pagina {
-            display: flex !important;
-            flex-direction: row !important;
-            align-items: center !important;
-            justify-content: center !important;
-            gap: 15px !important;
-            flex-wrap: nowrap !important;
-            white-space: nowrap !important;
-        }
-        #titulo-pagina span { display: flex; align-items: center; gap: 8px; }
-
-        /* HISTÓRICO - HORA NO CANTO SUPERIOR DIREITO */
-        .hist-item {
-            position: relative; /* Necessário para posicionar a hora */
-            background: rgba(128,128,128,0.05);
-            padding: 22px 15px 15px 15px; /* Mais espaço no topo para a hora não atropelar o texto */
-            margin-bottom: 12px;
-            border-radius: 8px;
-            border-left: 4px solid var(--accent);
-            font-size: 15px; /* Aumentado levemente para visibilidade */
-            text-align: left;
-            min-height: 50px;
-        }
-
-        .hist-time-badge {
-            position: absolute;
-            top: 8px;
-            right: 10px;
-            background: #e0e0e0;
-            color: #555;
-            padding: 2px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: bold;
-        }
-
-        .dark-theme .hist-time-badge {
-            background: #333;
-            color: #bbb;
-        }
-
-        .seta-movimento { color: var(--accent); font-weight: bold; padding: 0 4px; }
-
-        /* CARD USER ALINHADO À ESQUERDA */
-        .card-user { text-align: left !important; display: flex !important; align-items: center !important; }
-    </style>
 </head>
 <body class="light-theme mode-admin">
 
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <h2>Histórico</h2>
-            <button onclick="toggleSidebar()" class="close-btn">&times;</button>
+            <div style="display: flex; align-items: center;">
+                <button onclick="limparPainel()" class="btn-limpar">🗑️ Limpar</button>
+                <button onclick="toggleSidebar()" class="close-btn">&times;</button>
+            </div>
         </div>
         <div id="lista-historico" class="sidebar-content"></div>
     </div>
@@ -93,6 +48,15 @@
         let cidadeAtual = "Localizando...";
         let clockInterval = null;
 
+        // --- FUNÇÃO PARA LIMPAR TELA ---
+        function limparPainel() {
+            if(confirm("Deseja limpar todos os cards e o histórico da tela?")) {
+                todosOsDados = [];
+                document.getElementById('lista-historico').innerHTML = "";
+                renderizarTudo();
+            }
+        }
+
         // --- UNIFICAÇÃO E HISTÓRICO ---
         socket.on('atualizar-lista', (data) => {
             if (Array.isArray(data)) {
@@ -115,7 +79,6 @@
                 todosOsDados.push(novoDado);
             }
             
-            // Só gera histórico se houver mudança de local
             if (blocoAnterior !== novoDado.bloco) {
                 const lista = document.getElementById('lista-historico');
                 const item = document.createElement('div');
@@ -131,7 +94,6 @@
             }
         }
 
-        // --- CLIQUE FORA PARA FECHAR SIDEBAR ---
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
             const btnHist = document.getElementById('btn-hist');
@@ -142,49 +104,39 @@
             }
         });
 
-        // --- CONTROLES DE INTERFACE ---
-        function toggleSidebar() { 
-            document.getElementById("sidebar").classList.toggle("open"); 
-        }
+        function toggleSidebar() { document.getElementById("sidebar").classList.toggle("open"); }
 
         function toggleTheme() {
             const body = document.body;
             body.classList.toggle('dark-theme');
             body.classList.toggle('light-theme');
-            
             const isDark = body.classList.contains('dark-theme');
-            const btn = document.getElementById('theme-btn');
-            // Altera ícone e nome conforme o estado atual
-            btn.innerText = isDark ? "☀️ Tema Claro" : "🌙 Tema Escuro";
-            
+            document.getElementById('theme-btn').innerText = isDark ? "☀️ Tema Claro" : "🌙 Tema Escuro";
             if (body.classList.contains('mode-user')) atualizarRelogio();
         }
 
         function toggleView() {
             const body = document.body;
             const btn = document.getElementById('view-btn');
-            
             if (body.classList.contains('mode-admin')) {
                 body.classList.replace('mode-admin', 'mode-user');
-                btn.innerText = "🛠️ Admin"; // No modo usuário, mostra opção para Admin
+                btn.innerText = "🛠️ Admin";
                 buscarClima();
                 clockInterval = setInterval(atualizarRelogio, 1000);
             } else {
                 body.classList.replace('mode-user', 'mode-admin');
-                btn.innerText = "👤 Usuário"; // No modo admin, mostra opção para Usuário
+                btn.innerText = "👤 Usuário";
                 clearInterval(clockInterval);
                 document.getElementById('titulo-pagina').innerHTML = "Painel Administrativo";
             }
             renderizarTudo();
         }
 
-        // --- RELÓGIO E RENDERIZAÇÃO ---
         function atualizarRelogio() {
             const titulo = document.getElementById('titulo-pagina');
             if (!document.body.classList.contains('mode-user')) return;
             const agora = new Date();
             const filter = document.body.classList.contains('dark-theme') ? "invert(1)" : "invert(0.4)";
-            
             titulo.innerHTML = `
                 <span>${agora.toLocaleDateString('pt-BR')} — ${agora.toLocaleTimeString('pt-BR')}</span>
                 <span>
