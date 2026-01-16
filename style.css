@@ -39,8 +39,8 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
 
 .secao-bloco { margin-bottom: 50px; text-align: left; }
 .titulo-bloco-user { font-size: 1.8rem; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; text-transform: uppercase; }
-.grid-user { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 40px; }
-.card-user { background: var(--card); padding: 40px; gap: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+.grid-user { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 20px; }
+.card-user { background: var(--card); padding: 20px; gap: 20px; border-radius: 12px; text-align: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 
 .hist-item { background: rgba(128,128,128,0.1); padding: 12px; margin-bottom: 10px; border-radius: 5px; border-left: 3px solid var(--accent); font-size: 13px; text-align: left; }
 
