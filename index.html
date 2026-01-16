@@ -41,71 +41,71 @@
     </div>
 
     <script>
-        const socket = io();
-        let todosOsDados = []; 
+        const socket = io(); // Inicializa a conexão em tempo real com o servidor
+        let todosOsDados = []; // Armazena a lista atualizada de professores
         let temperaturaAtual = "--°C";
         let cidadeAtual = "Localizando...";
         let clockInterval = null;
         let scrollInterval;
         let mouseTimer;
         let isScrolling = true;
-        let scrollSpeed = 1; // Velocidade (1 pixel por frame)
+        let scrollSpeed = 1; // Velocidade da rolagem automática
 
+        // Envia comando ao servidor para apagar todos os registros
         function limparPainel() {
             if(confirm("Deseja limpar todos os dados do servidor?")) {
                 socket.emit('limpar-dados-servidor'); 
             }
         }
 
-       function iniciarAutoScroll() {
-    if (scrollInterval) clearInterval(scrollInterval);
-    
-    scrollInterval = setInterval(() => {
-        // VERIFICAÇÃO: Só executa se o body tiver a classe 'mode-user'
-        const isUserMode = document.body.classList.contains('mode-user');
-        
-        if (!isScrolling || !isUserMode) return;
-
-        // Se chegar no final da página
-        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 2) {
-            isScrolling = false; 
+        // Função responsável pela rolagem automática na visão de Usuário (Kiosk)
+        function iniciarAutoScroll() {
+            if (scrollInterval) clearInterval(scrollInterval);
             
-            setTimeout(() => {
-                // Só volta ao topo se ainda estiver no modo usuário
-                if(document.body.classList.contains('mode-user')) {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                }
-                setTimeout(() => { isScrolling = true; }, 1500);
-            }, 2000); 
-        } else {
-            window.scrollBy(0, scrollSpeed);
-        }
-    }, 30);
-}
+            scrollInterval = setInterval(() => {
+                const isUserMode = document.body.classList.contains('mode-user');
+                if (!isScrolling || !isUserMode) return;
 
+                // Verifica se a página chegou ao fim
+                if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 2) {
+                    isScrolling = false; 
+                    setTimeout(() => {
+                        // Se ainda for modo usuário, volta ao topo suavemente
+                        if(document.body.classList.contains('mode-user')) {
+                            window.scrollTo({ top: 0, behavior: 'smooth' });
+                        }
+                        setTimeout(() => { isScrolling = true; }, 1500);
+                    }, 2000); // Pausa de 2 segundos no fim da página
+                } else {
+                    window.scrollBy(0, scrollSpeed); // Rola X pixels para baixo
+                }
+            }, 30);
+        }
+
+        // Para o scroll automático ao interagir com o mouse/teclado e retoma após 2s
         function resetMouseTimer() {
             isScrolling = false;
             clearTimeout(mouseTimer);
-            
             mouseTimer = setTimeout(() => {
                 isScrolling = true;
             }, 2000);
         }
 
-        // Eventos de interação
+        // Listeners para detectar interação do usuário
         window.addEventListener('mousemove', resetMouseTimer);
         window.addEventListener('touchstart', resetMouseTimer);
         window.addEventListener('wheel', resetMouseTimer);
-        window.addEventListener('keydown', resetMouseTimer); // Adicionado para detectar teclado também
+        window.addEventListener('keydown', resetMouseTimer);
 
-        // Inicia a função globalmente, mas ela só agirá no modo usuário
         iniciarAutoScroll();
 
+        // Escuta o servidor: Sempre que houver mudança nos dados, este bloco roda
         socket.on('atualizar-lista', (data) => {
             todosOsDados = data.professores || [];
             const listaHist = document.getElementById('lista-historico');
             listaHist.innerHTML = "";
             
+            // Renderiza o log de movimentações na barra lateral
             if (data.historico) {
                 data.historico.slice().reverse().forEach(mov => {
                     const item = document.createElement('div');
@@ -120,9 +120,10 @@
                     listaHist.appendChild(item);
                 });
             }
-            renderizarTudo();
+            renderizarTudo(); // Redesenha os cards na tela principal
         });
 
+        // Funções de controle da interface (Sidebar, Temas e Visão Admin/User)
         function toggleSidebar() { document.getElementById("sidebar").classList.toggle("open"); }
 
         document.addEventListener('click', function(event) {
@@ -161,6 +162,7 @@
             renderizarTudo();
         }
 
+        // Atualiza a data, hora e clima no cabeçalho (apenas modo usuário)
         function atualizarRelogio() {
             const titulo = document.getElementById('titulo-pagina');
             if (!document.body.classList.contains('mode-user')) return;
@@ -171,6 +173,7 @@
                 <span>— <img src="https://cdn-icons-png.flaticon.com/128/2932/2932445.png" style="width: 24px; filter: ${filter};"> ${temperaturaAtual} em ${cidadeAtual}</span>`;
         }
 
+        // Busca informações climáticas via API pública baseada na geolocalização
         async function buscarClima() {
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(async (pos) => {
@@ -188,12 +191,14 @@
             }
         }
 
+        // FUNÇÃO PRINCIPAL: Desenha os cards na tela
         function renderizarTudo() {
             const container = document.getElementById('grid-principal');
             const isUser = document.body.classList.contains('mode-user');
             container.innerHTML = "";
 
             if (isUser) {
+                // No modo usuário, agrupa os professores por bloco
                 const grupos = {};
                 todosOsDados.forEach(d => {
                     const b = d.bloco.toString().toUpperCase().replace("BLOCO", "").trim();
@@ -212,6 +217,7 @@
                     container.appendChild(secao);
                 });
             } else {
+                // No modo Admin, exibe todos os cards com opção de filtro
                 const filtro = document.getElementById('filtro-bloco').value.replace("BLOCO", "").trim();
                 const gridAdmin = document.createElement('div');
                 gridAdmin.className = 'grid-admin';
