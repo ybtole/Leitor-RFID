@@ -107,7 +107,7 @@ rl.on('line', (line) => processarEntrada(line));
 
 http.listen(3000, () => {
     console.log('\n--------------------------------------------');
-    console.log('🚀 SERVIDOR ONLINE: http://localhost:3000');
+    console.log('SERVIDOR ONLINE: http://localhost:3000');
     console.log('Teste o Terminal: ID|NOME|SALA|BLOCO');
     console.log('--------------------------------------------');
     iniciarConexaoSerial();
