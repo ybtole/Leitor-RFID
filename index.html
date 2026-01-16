@@ -30,7 +30,7 @@
     </div>
 
     <div class="controles-topo">
-        <button onclick="toggleSidebar()" class="btn-acao btn-admin-only">☰ Histórico</button>
+        <button id="btn-hist" onclick="toggleSidebar()" class="btn-acao btn-admin-only">☰ Histórico</button>
         <button onclick="toggleTheme()" class="btn-acao" id="theme-btn">🌙 Tema Escuro</button>
         <button onclick="toggleView()" class="btn-acao btn-view" id="view-btn">👤 Usuário</button>
         
@@ -46,15 +46,13 @@
     <div class="container">
         <header id="cabecalho-principal">
             <h1 id="titulo-pagina">Painel Administrativo</h1>
-            <p id="subtitulo-pagina">Gerenciamento técnico em tempo real</p>
+            <p id="subtitulo-pagina">Gerenciamento em tempo real</p>
         </header>
         <div id="grid-principal"></div>
     </div>
 
     <script>
-        // Configuração do Socket com tratamento de erro
         const socket = io({ reconnection: true });
-        
         let todosOsDados = [];
         let scrollInterval = null;
         let inactivityTimeout = null;
@@ -62,99 +60,89 @@
         let temperaturaAtual = "--°C";
         let cidadeAtual = "Localizando...";
 
-        // --- BUSCA CLIMA E CIDADE POR GPS ---
+        // --- LÓGICA PARA FECHAR SIDEBAR AO CLICAR FORA ---
+        document.addEventListener('click', function(event) {
+            const sidebar = document.getElementById('sidebar');
+            const btnHist = document.getElementById('btn-hist');
+            
+            // Verifica se a sidebar está aberta
+            if (sidebar.classList.contains('open')) {
+                // Se o clique NÃO foi dentro da sidebar E NÃO foi no botão de abrir
+                if (!sidebar.contains(event.target) && !btnHist.contains(event.target)) {
+                    sidebar.classList.remove('open');
+                }
+            }
+        });
+
+        function toggleSidebar() { 
+            document.getElementById("sidebar").classList.toggle("open"); 
+        }
+
         async function buscarClima() {
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition(async (position) => {
                     const lat = position.coords.latitude;
                     const lon = position.coords.longitude;
-                    
                     try {
                         const resClima = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
                         const dataClima = await resClima.json();
-                        const temp = Math.round(dataClima.current_weather.temperature);
-                        temperaturaAtual = `${temp}°C`;
-
+                        temperaturaAtual = `${Math.round(dataClima.current_weather.temperature)}°C`;
                         const resGeo = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
                         const dataGeo = await resGeo.json();
-                        cidadeAtual = dataGeo.address.city || dataGeo.address.town || dataGeo.address.village || "Localidade Atual";
-                        
+                        cidadeAtual = dataGeo.address.city || dataGeo.address.town || "Localidade";
                         atualizarRelogio(); 
-                    } catch (e) { 
-                        temperaturaAtual = "Erro";
-                        cidadeAtual = "API Offline";
-                    }
-                }, () => { 
-                    temperaturaAtual = "GPS Off"; 
-                    cidadeAtual = "Sem Permissão";
+                    } catch (e) { temperaturaAtual = "Erro"; }
                 });
             }
         }
 
-        // --- ATUALIZAÇÃO DO CABEÇALHO (RELOGIO/CLIMA) ---
         function atualizarRelogio() {
             const titulo = document.getElementById('titulo-pagina');
             if (!document.body.classList.contains('mode-user')) return;
-
             const agora = new Date();
-            const dataStr = agora.toLocaleDateString('pt-BR');
-            const horaStr = agora.toLocaleTimeString('pt-BR');
-            const iconUrl = "https://cdn-icons-png.flaticon.com/128/2932/2932445.png";
-
-            titulo.style.fontSize = "1.4rem"; 
-            titulo.style.color = "#888"; 
-            titulo.style.fontWeight = "500";
+            const isInverted = document.body.classList.contains('dark-theme') ? "invert(1)" : "invert(0.4)";
             titulo.style.display = "flex";
             titulo.style.alignItems = "center";
             titulo.style.justifyContent = "center";
             titulo.style.gap = "12px";
-
-            const isInverted = document.body.classList.contains('dark-theme') ? "invert(1)" : "invert(0.4)";
-
             titulo.innerHTML = `
-                ${dataStr} — ${horaStr} — 
-                <span style="display: flex; align-items: center; margin-left: 5px;">
-                    <img src="${iconUrl}" style="width: 24px; height: 24px; filter: ${isInverted}; margin-right: 10px;">
+                ${agora.toLocaleDateString('pt-BR')} — ${agora.toLocaleTimeString('pt-BR')} — 
+                <span style="display: flex; align-items: center;">
+                    <img src="https://cdn-icons-png.flaticon.com/128/2932/2932445.png" style="width: 24px; height: 24px; filter: ${isInverted}; margin-right: 10px;">
                     ${temperaturaAtual} em ${cidadeAtual}
                 </span>`;
         }
 
-        // --- ALTERNÂNCIA DE TELAS ---
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            document.body.classList.toggle('light-theme');
+            const isDark = document.body.classList.contains('dark-theme');
+            document.getElementById('theme-btn').innerText = isDark ? "☀️ Tema Claro" : "🌙 Tema Escuro";
+            if (document.body.classList.contains('mode-user')) atualizarRelogio();
+        }
+
         function toggleView() {
             const body = document.body;
             const btn = document.getElementById('view-btn');
-            const titulo = document.getElementById('titulo-pagina');
             const subtitulo = document.getElementById('subtitulo-pagina');
-
             if (body.classList.contains('mode-admin')) {
                 body.classList.replace('mode-admin', 'mode-user');
                 btn.innerText = "🛠️ Admin";
-                subtitulo.style.display = 'none'; 
-                
-                buscarClima(); 
-                atualizarRelogio();
-                if (clockInterval) clearInterval(clockInterval);
-                clockInterval = setInterval(atualizarRelogio, 1000); 
-                
+                subtitulo.style.display = 'none';
+                buscarClima();
+                clockInterval = setInterval(atualizarRelogio, 1000);
                 resetInactivityTimer();
             } else {
                 body.classList.replace('mode-user', 'mode-admin');
                 btn.innerText = "👤 Usuário";
-                subtitulo.style.display = 'block'; 
-                
+                subtitulo.style.display = 'block';
                 clearInterval(clockInterval);
-                titulo.innerHTML = "Painel Administrativo"; 
-                titulo.style.fontSize = ""; 
-                titulo.style.color = "";
-                titulo.style.display = "block";
-
+                document.getElementById('titulo-pagina').innerHTML = "Painel Administrativo";
                 stopAutoScroll();
-                clearTimeout(inactivityTimeout);
             }
             renderizarTudo();
         }
 
-        // --- LOGICA DE SCROLL AUTOMÁTICO ---
         function startAutoScroll() {
             if (scrollInterval) return;
             scrollInterval = setInterval(() => {
@@ -180,21 +168,9 @@
 
         window.addEventListener('mousemove', resetInactivityTimer);
         window.addEventListener('keydown', resetInactivityTimer);
-        window.addEventListener('wheel', resetInactivityTimer);
 
-        // --- TEMAS E SIDEBAR ---
-        function toggleSidebar() { document.getElementById("sidebar").classList.toggle("open"); }
-        
-        function toggleTheme() {
-            document.body.classList.toggle('dark-theme');
-            document.body.classList.toggle('light-theme');
-            const isDark = document.body.classList.contains('dark-theme');
-            document.getElementById('theme-btn').innerText = isDark ? "☀️ Tema Claro" : "🌙 Tema Escuro";
-            if (document.body.classList.contains('mode-user')) atualizarRelogio();
-        }
-
-        // --- RENDERIZAÇÃO DOS CARDS ---
-        function renderizarTudo() {
+        // IMAGENS
+       function renderizarTudo() {
             const container = document.getElementById('grid-principal');
             const isUser = document.body.classList.contains('mode-user');
             container.innerHTML = "";
@@ -205,16 +181,27 @@
                     if (!grupos[d.bloco]) grupos[d.bloco] = [];
                     grupos[d.bloco].push(d);
                 });
+
                 Object.keys(grupos).sort().forEach(bloco => {
                     const secao = document.createElement('div');
                     secao.className = 'secao-bloco';
                     secao.innerHTML = `<h2 class="titulo-bloco-user">${bloco}</h2><div class="grid-user"></div>`;
                     const grid = secao.querySelector('.grid-user');
+                    
                     grupos[bloco].forEach(data => {
+                        // Lógica de Imagem: Tenta local, se falhar gera um rosto aleatório baseado no ID
+                        const fotoLocal = `img/${data.id}.jpg`;
+                        const fotoAleatoria = `https://i.pravatar.cc/150?u=${data.id}`;
+                        
                         grid.innerHTML += `
-                            <div class="card-user animar-entrada">
-                                <h3>${data.nome}</h3>
-                                <p>Sala: <strong>${data.sala}</strong></p>
+                            <div class="card-user animar-entrada" style="display: flex; align-items: center; gap: 20px; padding: 20px; min-width: 320px;">
+                                <img src="${fotoLocal}" 
+                                     onerror="this.src='${fotoAleatoria}'" 
+                                     style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #ddd; background: #eee;">
+                                <div style="text-align: left;">
+                                    <h3 style="margin:0; font-size: 1.3rem;">${data.nome}</h3>
+                                    <p style="margin:5px 0 0 0; font-size: 1rem;">Sala: <strong>${data.sala}</strong></p>
+                                </div>
                             </div>`;
                     });
                     container.appendChild(secao);
@@ -226,15 +213,27 @@
                 
                 todosOsDados.forEach(data => {
                     if (filtro === "TODOS" || data.bloco === filtro) {
+                        const fotoLocal = `img/${data.id}.jpg`;
+                        const fotoAleatoria = `https://i.pravatar.cc/150?u=${data.id}`;
+
                         gridAdmin.innerHTML += `
-                            <div class="card-admin animar-entrada">
-                                <div style="display:flex; justify-content:space-between; font-size:0.75rem; color:#888; margin-bottom:8px;">
+                            <div class="card-admin animar-entrada" style="display: flex; flex-direction: column; gap: 12px; padding: 20px; min-height: 160px; min-width: 350px;">
+                                <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#888;">
                                     <span>ID: ${data.id}</span>
-                                    <span style="background:rgba(0,0,0,0.05); padding:2px 6px; border-radius:4px;">🕒 ${data.hora || '--:--'}</span>
+                                    <span style="background:rgba(0,0,0,0.08); padding:3px 8px; border-radius:4px;">🕒 ${data.hora || '--:--'}</span>
                                 </div>
-                                <h3>${data.nome}</h3>
-                                <p><strong>Sala:</strong> ${data.sala}</p>
-                                <p><strong>Bloco:</strong> ${data.bloco}</p>
+                                
+                                <div style="display: flex; align-items: center; gap: 20px;">
+                                    <img src="${fotoLocal}" 
+                                         onerror="this.src='${fotoAleatoria}'" 
+                                         style="width: 90px; height: 90px; border-radius: 12px; object-fit: cover; background: #eee; border: 1px solid #ddd;">
+                                    
+                                    <div style="flex: 1;">
+                                        <h3 style="margin: 0 0 8px 0; font-size: 1.3rem;">${data.nome}</h3>
+                                        <p style="margin: 4px 0; font-size: 1rem;"><strong>Sala:</strong> ${data.sala}</p>
+                                        <p style="margin: 4px 0; font-size: 1rem;"><strong>Bloco:</strong> ${data.bloco}</p>
+                                    </div>
+                                </div>
                             </div>`;
                     }
                 });
@@ -242,41 +241,19 @@
             }
         }
 
-        // --- SOCKET.IO COM LÓGICA DE ATUALIZAÇÃO DINÂMICA ---
         socket.on('atualizar-lista', (data) => {
-            // Se o servidor não mandar bloco, definimos um padrão para não quebrar o código
-            if(!data.bloco) data.bloco = "SEM BLOCO";
-
             const index = todosOsDados.findIndex(d => d.id === data.id);
-            if (index !== -1) {
-                todosOsDados[index] = data; // Atualiza se já existir
-            } else {
-                todosOsDados.push(data); // Adiciona se for novo
-            }
+            if (index !== -1) { todosOsDados[index] = data; } 
+            else { todosOsDados.push(data); }
 
-            // Adiciona ao Histórico Lateral
             const item = document.createElement('div');
             item.className = 'hist-item animar-entrada';
-            item.innerHTML = `
-                <strong>${data.nome}</strong> movido para <span class="tag-bloco">${data.bloco}</span>
-                <br><small>${data.hora}</small>
-            `;
-            const listaHist = document.getElementById('lista-historico');
-            listaHist.prepend(item);
-
-            // Atualiza o visual
+            item.innerHTML = `<strong>${data.nome}</strong> movido para <span class="tag-bloco">${data.bloco}</span><br><small>${data.hora}</small>`;
+            document.getElementById('lista-historico').prepend(item);
             renderizarTudo();
-
-            // Se o usuário estiver inativo na tela de Usuário, o scroll continua
-            if (document.body.classList.contains('mode-user')) {
-                resetInactivityTimer();
-            }
         });
 
-        window.onload = () => { 
-            buscarClima();
-            renderizarTudo(); 
-        };
+        window.onload = () => { buscarClima(); renderizarTudo(); };
     </script>
 </body>
 </html>
