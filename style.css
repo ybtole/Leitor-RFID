@@ -4,10 +4,10 @@
  * Este software é fornecido para fins [Ex: Acadêmicos/Pessoais].
 */
 :root {
-    --bg: #f0f2f5; --card: #fff; --text: #333; --accent: #007bff; --side: #e9ecef;
+    --bg: #f0f2f5; --card: #fff; --text: #333; --accent: #0086af; --side: #e9ecef;
 }
 .dark-theme {
-    --bg: #121212; --card: #1e1e1e; --text: #fff; --accent: #00d4ff; --side: #1a1a1a;
+    --bg: #121212; --card: #1e1e1e; --text: #fff; --accent: #0092be; --side: #1a1a1a;
 }
 
 body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); transition: 0.3s; margin: 0; }
