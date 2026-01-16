@@ -13,7 +13,7 @@ const { ReadlineParser } = require('@serialport/parser-readline'); // Traduz os 
 const readline = require('readline'); // Permite testar via terminal sem Arduino
 
 // --- CONFIGURAÇÕES DO ESTADO ---
-const blocosDisponiveis = ["1", "2", "A", "D"];
+const blocosDisponiveis = ["1", "2", "A", "B", "C", "D"];
 let listaProfessores = []; // Estado atual (Onde cada professor está agora)
 let logMovimentacoes = []; // Histórico (Logs de idas e vindas)
 
@@ -115,6 +115,13 @@ io.on('connection', (socket) => {
         listaProfessores = [];
         logMovimentacoes = [];
         io.emit('atualizar-lista', { professores: [], historico: [] });
+    });
+
+    // --- NOVA FUNÇÃO ADICIONADA AQUI ---
+    // Escuta a string enviada pela caixa de texto do site
+    socket.on('comando-web', (comando) => {
+        console.log(`[Entrada Web]: ${comando}`);
+        processarEntrada(comando); // Chama a mesma função que o terminal e o Arduino usam
     });
 });
 

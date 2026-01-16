@@ -43,6 +43,15 @@
     <button onclick="limparPainel()" class="btn-limpar btn-admin-only">🗑️ Limpar Painel</button>
 
     <div class="container">
+        <div class="input-terminal-web btn-admin-only" 
+        style="position: fixed; bottom: 0; left: 0; width: 100%; background: var(--card); padding: 10px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; gap: 10px; justify-content: center; z-index: 1000; border-top: 1px solid var(--border);">
+       
+       <input type="text" id="input-comando" placeholder="ID|NOME|SALA|BLOCO" 
+              style="width: 300px; padding: 8px; border-radius: 5px; border: 1px solid #ddd; background: var(--bg); color: var(--text); font-family: monospace; font-size: 0.9rem;">
+       
+       <button onclick="enviarComandoWeb()" class="btn-acao" 
+               style="padding: 5px 15px; font-size: 0.85rem;">➕ Adicionar</button>
+   </div>
         <header id="cabecalho-principal">
             <h1 id="titulo-pagina">Painel Administrativo</h1>
             <p id="subtitulo-pagina">Gerenciamento em tempo real</p>
@@ -67,6 +76,35 @@
                 socket.emit('limpar-dados-servidor'); 
             }
         }
+
+        function enviarComandoWeb() {
+            const input = document.getElementById('input-comando');
+            const comando = input.value.trim();
+            
+            if (comando) {
+                // Envia a string para o servidor processar como se fosse o terminal
+                socket.emit('comando-web', comando); 
+                input.value = ""; // Limpa o campo após enviar
+            } else {
+                alert("Formato esperado: ID|NOME|SALA|BLOCO");
+            }
+        }
+        
+        // Aguarda o documento carregar para garantir que o input existe
+document.addEventListener('DOMContentLoaded', () => {
+    const inputComando = document.getElementById('input-comando');
+
+    if (inputComando) {
+        inputComando.addEventListener('keypress', (event) => {
+            // Verifica se a tecla apertada foi o Enter
+            if (event.key === 'Enter') {
+                enviarComandoWeb();
+                // Opcional: tira o foco do campo após enviar (blur)
+                // inputComando.blur(); 
+            }
+        });
+    }
+});
 
         // Função responsável pela rolagem automática na visão de Usuário (Kiosk)
         function iniciarAutoScroll() {
