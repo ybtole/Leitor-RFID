@@ -16,8 +16,10 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
 
 .btn-acao { 
     padding: 10px 15px; background: var(--accent); border: none; border-radius: 5px; 
-    cursor: pointer; font-weight: bold; color: #fff !important; 
+    cursor: pointer; font-weight: bold; color: #fff !important; transition: 0.3s;
 }
+
+.btn-acao:hover { transform: scale(1.05); }
 
 .select-bloco { 
     padding: 10px 15px; background: #fff !important; color: #333 !important; 

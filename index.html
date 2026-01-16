@@ -29,7 +29,7 @@
         <button onclick="toggleTheme()" class="btn-acao" id="theme-btn">🌙 Tema Escuro</button>
         <button onclick="toggleView()" class="btn-acao btn-view" id="view-btn">👤 Usuário</button>
         
-        <select id="filtro-bloco" class="btn-admin-only select-bloco" onchange="renderizarTudo()">
+        <select id="filtro-bloco" style="transition: transform 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1.0)'" class="btn-admin-only select-bloco" onchange="renderizarTudo()">
             <option value="TODOS">Todos os Blocos</option>
             <option value="1">Bloco 1</option>
             <option value="2">Bloco 2</option>
