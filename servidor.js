@@ -6,73 +6,68 @@ const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
 const readline = require('readline');
 
-// Configuração de blocos para o sorteio automático
-const blocosDisponiveis = ["BLOCO 1", "BLOCO 2", "BLOCO A", "BLOCO D"];
+// --- CONFIGURAÇÕES ---
+const blocosDisponiveis = ["1", "2", "A", "D"]; // Removido "BLOCO" para normalizar
+let historico = []; // Armazena os registros da sessão atual
 
 app.use(express.static(__dirname));
 
-// Configuração do Terminal (para simular sem RFID ou testar comandos)
 const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
     terminal: true
 });
 
-// --- FUNÇÃO DE PROCESSAMENTO DE DADOS (LÓGICA CENTRAL) ---
+// --- LÓGICA CENTRAL DE PROCESSAMENTO ---
 function processarEntrada(entrada) {
     const partes = entrada.trim().split('|');
     let idBruto = partes[0].toUpperCase();
-    if (!idBruto) return;
+    
+    // Ignora entradas vazias ou mensagens de boot do Arduino
+    if (!idBruto || idBruto.includes("ARDUINO OK")) return;
     
     let idFinal, nome, sala, bloco;
-    const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const agora = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
 
-    // 1. LÓGICA DE UNIFICAÇÃO (Dois IDs, um único Card)
+    // 1. Lógica de Unificação (Professor Marcos)
     if (idBruto === "A6AE75F8" || idBruto === "CBEA540C") { 
-        idFinal = "PROF_MARCOS_UNICO"; // ID Único para o Front-end não duplicar o card
+        idFinal = "PROF_MARCOS_UNICO";
         nome = "PROFESSOR MARCOS";
-        
-        // Define o local baseado em qual cartão foi passado
         if (idBruto === "A6AE75F8") {
             sala = "Laboratório de Redes";
-            bloco = "BLOCO D";
+            bloco = "D";
         } else {
             sala = "Sala de Reuniões";
-            bloco = "BLOCO A";
+            bloco = "A";
         }
-    }
-    // 2. Entrada completa via Terminal (Formato: ID|NOME|SALA|BLOCO)
-    else if (partes.length === 4) {
-        [idFinal, nome, sala, bloco] = partes.map(p => p.trim().toUpperCase());
     } 
-    // 3. SORTEIO: Para cartões novos/desconhecidos lidos pelo Arduino
+    // 2. Entrada Completa via Terminal (ID|NOME|SALA|BLOCO)
+    else if (partes.length === 4) {
+        [idFinal, nome, sala, bloco] = partes.map(p => p.trim().toUpperCase().replace("BLOCO", "").trim());
+    } 
+    // 3. Entrada por Sensor ou ID avulso
     else {
         idFinal = idBruto;
-        nome = `USUÁRIO ${idBruto.substring(0, 4)}`;
-        sala = "SALA " + Math.floor(Math.random() * 500);
+        nome = `USUÁRIO ${idBruto.substring(0, 4)}`; 
+        sala = Math.floor(Math.random() * 500);
         bloco = blocosDisponiveis[Math.floor(Math.random() * blocosDisponiveis.length)];
     }
 
-    const infoFinal = {
-        id: idFinal,
-        nome: nome,
-        sala: sala,
-        bloco: bloco,
-        hora: agora
-    };
+    const registro = { id: idFinal, nome, sala, bloco, hora: agora };
 
-    console.log(`[EVENTO] ${infoFinal.nome} (${idBruto}) -> ${infoFinal.bloco} às ${infoFinal.hora}`);
+    // Evita duplicados idênticos seguidos no histórico (opcional)
+    historico.push(registro);
     
-    // Envia para o navegador
-    io.emit('atualizar-lista', infoFinal);
+    console.log(`[LOG] ${nome} registrado no BLOCO ${bloco}`);
+
+    // EMISSÃO VIA SOCKET: Envia o histórico atualizado para todos
+    io.emit('atualizar-lista', historico);
 }
 
-// --- FUNÇÃO PARA DETECTAR E CONECTAR ARDUINO ---
+// --- COMUNICAÇÃO SERIAL (ARDUINO) ---
 async function iniciarConexaoSerial() {
     try {
         const ports = await SerialPort.list();
-        
-        // Procura por Arduinos reais ou adaptadores USB-Serial, ignorando a COM1
         const portaArduino = ports.find(p => 
             (p.manufacturer?.includes('Arduino') || 
              p.pnpId?.includes('VID_2341') ||
@@ -81,34 +76,30 @@ async function iniciarConexaoSerial() {
         );
 
         if (portaArduino) {
-            console.log(`✅ Arduino REAL encontrado na porta: ${portaArduino.path}`);
-            const port = new SerialPort({
-                path: portaArduino.path,
-                baudRate: 9600
-            });
-
+            console.log(`✅ Conexão Serial em: ${portaArduino.path}`);
+            const port = new SerialPort({ path: portaArduino.path, baudRate: 9600 });
             const parser = port.pipe(new ReadlineParser({ delimiter: '\r\n' }));
-            
-            // Quando receber dado do Arduino, processa
             parser.on('data', (data) => processarEntrada(data));
-            
-            port.on('error', (err) => console.log('❌ Erro na porta Serial:', err.message));
         } else {
-            console.log("⚠️ Nenhum Arduino detectado (COM1 ignorada). Use o Terminal para simular.");
+            console.log("⚠️ Aguardando conexão do Arduino... (Use o terminal para testar)");
         }
     } catch (err) {
-        console.error("❌ Erro ao listar portas:", err);
+        console.error("❌ Erro Serial:", err);
     }
 }
 
-// Escuta o Terminal
+// --- GESTÃO DE CONEXÕES SOCKET ---
+io.on('connection', (socket) => {
+    console.log('📱 Novo dispositivo conectado ao painel');
+    // Assim que o site abre, ele recebe o histórico que já existe no servidor
+    socket.emit('atualizar-lista', historico);
+});
+
 rl.on('line', (line) => processarEntrada(line));
 
-// Inicia o Servidor
 http.listen(3000, () => {
-    console.log('\n--- SISTEMA DE MONITORAMENTO RFID ATIVO ---');
-    console.log('Servidor rodando em: http://localhost:3000');
-    console.log('Para testar manual, digite no terminal: ID ou ID|NOME|SALA|BLOCO');
+    console.log('\n--------------------------------------------');
+    console.log('🚀 SERVIDOR ONLINE: http://localhost:3000');
     console.log('--------------------------------------------');
     iniciarConexaoSerial();
 });

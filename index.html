@@ -6,17 +6,52 @@
     <link rel="stylesheet" href="style.css">
     <script src="/socket.io/socket.io.js"></script>
     <style>
-        /* Pequeno ajuste para as tags de bloco no histórico */
-        .tag-bloco {
-            background: rgba(0,0,0,0.1);
-            padding: 2px 5px;
+        /* CABEÇALHO EM LINHA ÚNICA */
+        #titulo-pagina {
+            display: flex !important;
+            flex-direction: row !important;
+            align-items: center !important;
+            justify-content: center !important;
+            gap: 15px !important;
+            flex-wrap: nowrap !important;
+            white-space: nowrap !important;
+        }
+        #titulo-pagina span { display: flex; align-items: center; gap: 8px; }
+
+        /* HISTÓRICO - HORA NO CANTO SUPERIOR DIREITO */
+        .hist-item {
+            position: relative; /* Necessário para posicionar a hora */
+            background: rgba(128,128,128,0.05);
+            padding: 22px 15px 15px 15px; /* Mais espaço no topo para a hora não atropelar o texto */
+            margin-bottom: 12px;
+            border-radius: 8px;
+            border-left: 4px solid var(--accent);
+            font-size: 15px; /* Aumentado levemente para visibilidade */
+            text-align: left;
+            min-height: 50px;
+        }
+
+        .hist-time-badge {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            background: #e0e0e0;
+            color: #555;
+            padding: 2px 8px;
             border-radius: 4px;
-            font-size: 0.8em;
+            font-size: 11px;
             font-weight: bold;
         }
-        .dark-theme .tag-bloco {
-            background: rgba(255,255,255,0.1);
+
+        .dark-theme .hist-time-badge {
+            background: #333;
+            color: #bbb;
         }
+
+        .seta-movimento { color: var(--accent); font-weight: bold; padding: 0 4px; }
+
+        /* CARD USER ALINHADO À ESQUERDA */
+        .card-user { text-align: left !important; display: flex !important; align-items: center !important; }
     </style>
 </head>
 <body class="light-theme mode-admin">
@@ -36,10 +71,10 @@
         
         <select id="filtro-bloco" class="btn-admin-only select-bloco" onchange="renderizarTudo()">
             <option value="TODOS">Todos os Blocos</option>
-            <option value="BLOCO 1">Bloco 1</option>
-            <option value="BLOCO 2">Bloco 2</option>
-            <option value="BLOCO A">Bloco A</option>
-            <option value="BLOCO D">Bloco D</option>
+            <option value="1">Bloco 1</option>
+            <option value="2">Bloco 2</option>
+            <option value="A">Bloco A</option>
+            <option value="D">Bloco D</option>
         </select>
     </div>
 
@@ -52,125 +87,113 @@
     </div>
 
     <script>
-        const socket = io({ reconnection: true });
-        let todosOsDados = [];
-        let scrollInterval = null;
-        let inactivityTimeout = null;
-        let clockInterval = null;
+        const socket = io();
+        let todosOsDados = []; 
         let temperaturaAtual = "--°C";
         let cidadeAtual = "Localizando...";
+        let clockInterval = null;
 
-        // --- LÓGICA PARA FECHAR SIDEBAR AO CLICAR FORA ---
+        // --- UNIFICAÇÃO E HISTÓRICO ---
+        socket.on('atualizar-lista', (data) => {
+            if (Array.isArray(data)) {
+                todosOsDados = [];
+                data.forEach(item => atualizarStatusUnico(item));
+            } else {
+                atualizarStatusUnico(data);
+            }
+            renderizarTudo();
+        });
+
+        function atualizarStatusUnico(novoDado) {
+            const index = todosOsDados.findIndex(d => d.nome.trim().toUpperCase() === novoDado.nome.trim().toUpperCase());
+            let blocoAnterior = "-----";
+
+            if (index !== -1) {
+                blocoAnterior = todosOsDados[index].bloco;
+                todosOsDados[index] = novoDado;
+            } else {
+                todosOsDados.push(novoDado);
+            }
+            
+            // Só gera histórico se houver mudança de local
+            if (blocoAnterior !== novoDado.bloco) {
+                const lista = document.getElementById('lista-historico');
+                const item = document.createElement('div');
+                item.className = 'hist-item animar-entrada';
+                item.innerHTML = `
+                    <span class="hist-time-badge">${novoDado.hora || '00:00'}</span>
+                    <strong>${novoDado.nome}</strong><br>
+                    <span style="font-size: 0.9em; opacity: 0.8;">
+                        ${blocoAnterior} <span class="seta-movimento">→</span> ${novoDado.bloco}
+                    </span>
+                `;
+                lista.prepend(item);
+            }
+        }
+
+        // --- CLIQUE FORA PARA FECHAR SIDEBAR ---
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
             const btnHist = document.getElementById('btn-hist');
-            
-            // Verifica se a sidebar está aberta
             if (sidebar.classList.contains('open')) {
-                // Se o clique NÃO foi dentro da sidebar E NÃO foi no botão de abrir
                 if (!sidebar.contains(event.target) && !btnHist.contains(event.target)) {
                     sidebar.classList.remove('open');
                 }
             }
         });
 
+        // --- CONTROLES DE INTERFACE ---
         function toggleSidebar() { 
             document.getElementById("sidebar").classList.toggle("open"); 
         }
 
-        async function buscarClima() {
-            if ("geolocation" in navigator) {
-                navigator.geolocation.getCurrentPosition(async (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    try {
-                        const resClima = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
-                        const dataClima = await resClima.json();
-                        temperaturaAtual = `${Math.round(dataClima.current_weather.temperature)}°C`;
-                        const resGeo = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-                        const dataGeo = await resGeo.json();
-                        cidadeAtual = dataGeo.address.city || dataGeo.address.town || "Localidade";
-                        atualizarRelogio(); 
-                    } catch (e) { temperaturaAtual = "Erro"; }
-                });
-            }
-        }
-
-        function atualizarRelogio() {
-            const titulo = document.getElementById('titulo-pagina');
-            if (!document.body.classList.contains('mode-user')) return;
-            const agora = new Date();
-            const isInverted = document.body.classList.contains('dark-theme') ? "invert(1)" : "invert(0.4)";
-            titulo.style.display = "flex";
-            titulo.style.alignItems = "center";
-            titulo.style.justifyContent = "center";
-            titulo.style.gap = "12px";
-            titulo.innerHTML = `
-                ${agora.toLocaleDateString('pt-BR')} — ${agora.toLocaleTimeString('pt-BR')} — 
-                <span style="display: flex; align-items: center;">
-                    <img src="https://cdn-icons-png.flaticon.com/128/2932/2932445.png" style="width: 24px; height: 24px; filter: ${isInverted}; margin-right: 10px;">
-                    ${temperaturaAtual} em ${cidadeAtual}
-                </span>`;
-        }
-
         function toggleTheme() {
-            document.body.classList.toggle('dark-theme');
-            document.body.classList.toggle('light-theme');
-            const isDark = document.body.classList.contains('dark-theme');
-            document.getElementById('theme-btn').innerText = isDark ? "☀️ Tema Claro" : "🌙 Tema Escuro";
-            if (document.body.classList.contains('mode-user')) atualizarRelogio();
+            const body = document.body;
+            body.classList.toggle('dark-theme');
+            body.classList.toggle('light-theme');
+            
+            const isDark = body.classList.contains('dark-theme');
+            const btn = document.getElementById('theme-btn');
+            // Altera ícone e nome conforme o estado atual
+            btn.innerText = isDark ? "☀️ Tema Claro" : "🌙 Tema Escuro";
+            
+            if (body.classList.contains('mode-user')) atualizarRelogio();
         }
 
         function toggleView() {
             const body = document.body;
             const btn = document.getElementById('view-btn');
-            const subtitulo = document.getElementById('subtitulo-pagina');
+            
             if (body.classList.contains('mode-admin')) {
                 body.classList.replace('mode-admin', 'mode-user');
-                btn.innerText = "🛠️ Admin";
-                subtitulo.style.display = 'none';
+                btn.innerText = "🛠️ Admin"; // No modo usuário, mostra opção para Admin
                 buscarClima();
                 clockInterval = setInterval(atualizarRelogio, 1000);
-                resetInactivityTimer();
             } else {
                 body.classList.replace('mode-user', 'mode-admin');
-                btn.innerText = "👤 Usuário";
-                subtitulo.style.display = 'block';
+                btn.innerText = "👤 Usuário"; // No modo admin, mostra opção para Usuário
                 clearInterval(clockInterval);
                 document.getElementById('titulo-pagina').innerHTML = "Painel Administrativo";
-                stopAutoScroll();
             }
             renderizarTudo();
         }
 
-        function startAutoScroll() {
-            if (scrollInterval) return;
-            scrollInterval = setInterval(() => {
-                const scrollPos = window.pageYOffset || document.documentElement.scrollTop;
-                const totalHeight = document.documentElement.scrollHeight - window.innerHeight;
-                if (scrollPos >= totalHeight - 5) {
-                    stopAutoScroll();
-                    window.scrollTo({ top: 0, behavior: 'instant' });
-                    setTimeout(() => { if(document.body.classList.contains('mode-user')) resetInactivityTimer(); }, 1500);
-                } else { window.scrollBy(0, 1); }
-            }, 30);
+        // --- RELÓGIO E RENDERIZAÇÃO ---
+        function atualizarRelogio() {
+            const titulo = document.getElementById('titulo-pagina');
+            if (!document.body.classList.contains('mode-user')) return;
+            const agora = new Date();
+            const filter = document.body.classList.contains('dark-theme') ? "invert(1)" : "invert(0.4)";
+            
+            titulo.innerHTML = `
+                <span>${agora.toLocaleDateString('pt-BR')} — ${agora.toLocaleTimeString('pt-BR')}</span>
+                <span>
+                    — <img src="https://cdn-icons-png.flaticon.com/128/2932/2932445.png" style="width: 24px; filter: ${filter};">
+                    ${temperaturaAtual} em ${cidadeAtual}
+                </span>`;
         }
 
-        function stopAutoScroll() { clearInterval(scrollInterval); scrollInterval = null; }
-
-        function resetInactivityTimer() {
-            stopAutoScroll();
-            clearTimeout(inactivityTimeout);
-            if (document.body.classList.contains('mode-user')) {
-                inactivityTimeout = setTimeout(startAutoScroll, 3000);
-            }
-        }
-
-        window.addEventListener('mousemove', resetInactivityTimer);
-        window.addEventListener('keydown', resetInactivityTimer);
-
-        // IMAGENS
-       function renderizarTudo() {
+        function renderizarTudo() {
             const container = document.getElementById('grid-principal');
             const isUser = document.body.classList.contains('mode-user');
             container.innerHTML = "";
@@ -178,60 +201,47 @@
             if (isUser) {
                 const grupos = {};
                 todosOsDados.forEach(d => {
-                    if (!grupos[d.bloco]) grupos[d.bloco] = [];
-                    grupos[d.bloco].push(d);
+                    const blocoID = d.bloco.toString().toUpperCase().replace("BLOCO", "").trim();
+                    if (!grupos[blocoID]) grupos[blocoID] = [];
+                    grupos[blocoID].push(d);
                 });
 
-                Object.keys(grupos).sort().forEach(bloco => {
+                Object.keys(grupos).sort((a, b) => a.localeCompare(b, undefined, {numeric: true})).forEach(id => {
                     const secao = document.createElement('div');
                     secao.className = 'secao-bloco';
-                    secao.innerHTML = `<h2 class="titulo-bloco-user">${bloco}</h2><div class="grid-user"></div>`;
+                    secao.innerHTML = `<h2 class="titulo-bloco-user">BLOCO ${id}</h2><div class="grid-user"></div>`;
                     const grid = secao.querySelector('.grid-user');
-                    
-                    grupos[bloco].forEach(data => {
-                        // Lógica de Imagem: Tenta local, se falhar gera um rosto aleatório baseado no ID
-                        const fotoLocal = `img/${data.id}.jpg`;
-                        const fotoAleatoria = `https://i.pravatar.cc/150?u=${data.id}`;
-                        
+                    grupos[id].forEach(data => {
                         grid.innerHTML += `
-                            <div class="card-user animar-entrada" style="display: flex; align-items: center; gap: 20px; padding: 20px; min-width: 320px;">
-                                <img src="${fotoLocal}" 
-                                     onerror="this.src='${fotoAleatoria}'" 
-                                     style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #ddd; background: #eee;">
-                                <div style="text-align: left;">
-                                    <h3 style="margin:0; font-size: 1.3rem;">${data.nome}</h3>
-                                    <p style="margin:5px 0 0 0; font-size: 1rem;">Sala: <strong>${data.sala}</strong></p>
+                            <div class="card-user animar-entrada">
+                                <img src="img/${data.id}.jpg" onerror="this.src='https://i.pravatar.cc/150?u=${data.id}'" style="width:75px; height:75px; border-radius:50%; object-fit:cover; border: 2px solid #ddd;">
+                                <div>
+                                    <h3 style="margin:0; font-size:1.2rem;">${data.nome}</h3>
+                                    <p style="margin:5px 0 0 0;">Sala: <strong>${data.sala}</strong></p>
                                 </div>
                             </div>`;
                     });
                     container.appendChild(secao);
                 });
             } else {
-                const filtro = document.getElementById('filtro-bloco').value;
+                const filtro = document.getElementById('filtro-bloco').value.replace("BLOCO", "").trim();
                 const gridAdmin = document.createElement('div');
                 gridAdmin.className = 'grid-admin';
-                
                 todosOsDados.forEach(data => {
-                    if (filtro === "TODOS" || data.bloco === filtro) {
-                        const fotoLocal = `img/${data.id}.jpg`;
-                        const fotoAleatoria = `https://i.pravatar.cc/150?u=${data.id}`;
-
+                    const blocoLimpo = data.bloco.toString().toUpperCase().replace("BLOCO", "").trim();
+                    if (filtro === "TODOS" || blocoLimpo === filtro) {
                         gridAdmin.innerHTML += `
-                            <div class="card-admin animar-entrada" style="display: flex; flex-direction: column; gap: 12px; padding: 20px; min-height: 160px; min-width: 350px;">
-                                <div style="display:flex; justify-content:space-between; font-size:0.85rem; color:#888;">
+                            <div class="card-admin animar-entrada">
+                                <div class="card-header-admin">
                                     <span>ID: ${data.id}</span>
-                                    <span style="background:rgba(0,0,0,0.08); padding:3px 8px; border-radius:4px;">🕒 ${data.hora || '--:--'}</span>
+                                    <span class="hora-badge">🕒 ${data.hora}</span>
                                 </div>
-                                
-                                <div style="display: flex; align-items: center; gap: 20px;">
-                                    <img src="${fotoLocal}" 
-                                         onerror="this.src='${fotoAleatoria}'" 
-                                         style="width: 90px; height: 90px; border-radius: 12px; object-fit: cover; background: #eee; border: 1px solid #ddd;">
-                                    
-                                    <div style="flex: 1;">
-                                        <h3 style="margin: 0 0 8px 0; font-size: 1.3rem;">${data.nome}</h3>
-                                        <p style="margin: 4px 0; font-size: 1rem;"><strong>Sala:</strong> ${data.sala}</p>
-                                        <p style="margin: 4px 0; font-size: 1rem;"><strong>Bloco:</strong> ${data.bloco}</p>
+                                <div style="display:flex; align-items:center; gap:15px; margin-top:10px;">
+                                    <img src="img/${data.id}.jpg" onerror="this.src='https://i.pravatar.cc/150?u=${data.id}'" style="width:85px; height:85px; border-radius:10px; object-fit:cover;">
+                                    <div>
+                                        <h3 style="margin:0;">${data.nome}</h3>
+                                        <p style="margin:5px 0;">Sala: ${data.sala}</p>
+                                        <p style="margin:0;">Bloco: ${data.bloco}</p>
                                     </div>
                                 </div>
                             </div>`;
@@ -241,19 +251,24 @@
             }
         }
 
-        socket.on('atualizar-lista', (data) => {
-            const index = todosOsDados.findIndex(d => d.id === data.id);
-            if (index !== -1) { todosOsDados[index] = data; } 
-            else { todosOsDados.push(data); }
+        async function buscarClima() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(async (pos) => {
+                    try {
+                        const { latitude: lat, longitude: lon } = pos.coords;
+                        const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                        const d = await res.json();
+                        temperaturaAtual = `${Math.round(d.current_weather.temperature)}°C`;
+                        const resG = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                        const dG = await resG.json();
+                        cidadeAtual = dG.address.city || dG.address.town || "Localidade";
+                        atualizarRelogio();
+                    } catch (e) { console.log("Erro clima"); }
+                });
+            }
+        }
 
-            const item = document.createElement('div');
-            item.className = 'hist-item animar-entrada';
-            item.innerHTML = `<strong>${data.nome}</strong> movido para <span class="tag-bloco">${data.bloco}</span><br><small>${data.hora}</small>`;
-            document.getElementById('lista-historico').prepend(item);
-            renderizarTudo();
-        });
-
-        window.onload = () => { buscarClima(); renderizarTudo(); };
+        window.onload = () => { renderizarTudo(); };
     </script>
 </body>
 </html>
