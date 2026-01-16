@@ -116,27 +116,17 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
 .seta-movimento { color: var(--accent); font-weight: bold; padding: 0 4px; }
 
 /* --- Botão Limpar (Novo) --- */
-.btn-limpar {
-    background: #ff4444;
-    color: white;
-    border: none;
-    padding: 5px 12px;
-    border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: 0.2s;
-    margin-right: 10px;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+/* --- Botão Limpar Isolado no Canto Direito --- */
+.btn-limpar { position: absolute; top: 20px; /* Alinhado com a altura dos outros botões */ right: 20px; padding: 10px 15px; background: #ff4444; color: #fff !important; border: none; border-radius: 5px; 
+cursor: pointer; font-weight: bold; transition: 0.3s; display: flex; align-items: center; gap: 5px; z-index: 10; }
+
+.btn-limpar:hover {
+    background: #cc0000;
+    transform: scale(1.05);
 }
 
-.btn-limpar:hover { background: #cc0000; }
+/* Esconde o botão no modo usuário, assim como os outros */
+.mode-user .btn-limpar { display: none; }
 
 /* --- Cards de Usuário --- */
-.card-user { 
-    text-align: left !important; 
-    display: flex !important; 
-    align-items: center !important; 
-}
+.card-user { text-align: left !important; display: flex !important; align-items: center !important; }
