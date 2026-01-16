@@ -70,3 +70,73 @@ body { font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--
 .dark-theme .hora-badge {
     background: rgba(255, 255, 255, 0.1);
 }
+
+/* --- Estilos do Cabeçalho e Título --- */
+#titulo-pagina {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 15px !important;
+    flex-wrap: nowrap !important;
+    white-space: nowrap !important;
+}
+#titulo-pagina span { display: flex; align-items: center; gap: 8px; }
+
+/* --- Itens do Histórico --- */
+.hist-item {
+    position: relative;
+    background: rgba(128,128,128,0.05);
+    padding: 22px 15px 15px 15px;
+    margin-bottom: 12px;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent);
+    font-size: 15px;
+    text-align: left;
+    min-height: 50px;
+}
+
+.hist-time-badge {
+    position: absolute;
+    top: 8px;
+    right: 10px;
+    background: #e0e0e0;
+    color: #555;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+.dark-theme .hist-time-badge {
+    background: #333;
+    color: #bbb;
+}
+
+.seta-movimento { color: var(--accent); font-weight: bold; padding: 0 4px; }
+
+/* --- Botão Limpar (Novo) --- */
+.btn-limpar {
+    background: #ff4444;
+    color: white;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+    margin-right: 10px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.btn-limpar:hover { background: #cc0000; }
+
+/* --- Cards de Usuário --- */
+.card-user { 
+    text-align: left !important; 
+    display: flex !important; 
+    align-items: center !important; 
+}
