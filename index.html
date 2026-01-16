@@ -46,12 +46,60 @@
         let temperaturaAtual = "--°C";
         let cidadeAtual = "Localizando...";
         let clockInterval = null;
+        let scrollInterval;
+        let mouseTimer;
+        let isScrolling = true;
+        let scrollSpeed = 1; // Velocidade (1 pixel por frame)
 
         function limparPainel() {
             if(confirm("Deseja limpar todos os dados do servidor?")) {
                 socket.emit('limpar-dados-servidor'); 
             }
         }
+
+       function iniciarAutoScroll() {
+    if (scrollInterval) clearInterval(scrollInterval);
+    
+    scrollInterval = setInterval(() => {
+        // VERIFICAÇÃO: Só executa se o body tiver a classe 'mode-user'
+        const isUserMode = document.body.classList.contains('mode-user');
+        
+        if (!isScrolling || !isUserMode) return;
+
+        // Se chegar no final da página
+        if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 2) {
+            isScrolling = false; 
+            
+            setTimeout(() => {
+                // Só volta ao topo se ainda estiver no modo usuário
+                if(document.body.classList.contains('mode-user')) {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                setTimeout(() => { isScrolling = true; }, 1500);
+            }, 2000); 
+        } else {
+            window.scrollBy(0, scrollSpeed);
+        }
+    }, 30);
+}
+
+        function resetMouseTimer() {
+            isScrolling = false;
+            clearTimeout(mouseTimer);
+            
+            mouseTimer = setTimeout(() => {
+                isScrolling = true;
+            }, 2000);
+        }
+
+        // Eventos de interação
+        window.addEventListener('mousemove', resetMouseTimer);
+        window.addEventListener('touchstart', resetMouseTimer);
+        window.addEventListener('wheel', resetMouseTimer);
+        window.addEventListener('keydown', resetMouseTimer); // Adicionado para detectar teclado também
+
+        // Inicia a função globalmente, mas ela só agirá no modo usuário
+        iniciarAutoScroll();
 
         socket.on('atualizar-lista', (data) => {
             todosOsDados = data.professores || [];
@@ -159,7 +207,7 @@
                     secao.innerHTML = `<h2 class="titulo-bloco-user">BLOCO ${id}</h2><div class="grid-user"></div>`;
                     const grid = secao.querySelector('.grid-user');
                     grupos[id].forEach(data => {
-                        grid.innerHTML += `<div class="card-user animar-entrada"><img src="img/${data.id}.jpg" onerror="this.src='https://i.pravatar.cc/150?u=${data.id}'" style="width:75px;height:75px;border-radius:50%;object-fit:cover;border: 2px solid #ddd;"><div><h3 style="margin:0;font-size:1.2rem;">${data.nome}</h3><p style="margin:5px 0 0 0;">Sala: <strong>${data.sala}</strong></p></div></div>`;
+                        grid.innerHTML += `<div class="card-user animar-entrada"><img src="img/${data.id}.jpg" onerror="this.src='https://i.pravatar.cc/150?u=${data.id}'" style="width:120px; height:120px; flex-shrink: 0; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;"><div><h3 style="margin:0;font-size:1.2rem;">${data.nome}</h3><p style="margin:5px 0 0 0;">Sala: <strong>${data.sala}</strong></p></div></div>`;
                     });
                     container.appendChild(secao);
                 });
