@@ -11,10 +11,7 @@
     <div id="sidebar" class="sidebar">
         <div class="sidebar-header">
             <h2>Histórico</h2>
-            <div style="display: flex; align-items: center;">
-                <button onclick="limparPainel()" class="btn-limpar">🗑️ Limpar</button>
-                <button onclick="toggleSidebar()" class="close-btn">&times;</button>
-            </div>
+            <button onclick="toggleSidebar()" class="close-btn">&times;</button>
         </div>
         <div id="lista-historico" class="sidebar-content"></div>
     </div>
@@ -33,6 +30,8 @@
         </select>
     </div>
 
+    <button onclick="limparPainel()" class="btn-limpar btn-admin-only">🗑️ Limpar Painel</button>
+
     <div class="container">
         <header id="cabecalho-principal">
             <h1 id="titulo-pagina">Painel Administrativo</h1>
@@ -48,51 +47,35 @@
         let cidadeAtual = "Localizando...";
         let clockInterval = null;
 
-        // --- FUNÇÃO PARA LIMPAR TELA ---
         function limparPainel() {
-            if(confirm("Deseja limpar todos os cards e o histórico da tela?")) {
-                todosOsDados = [];
-                document.getElementById('lista-historico').innerHTML = "";
-                renderizarTudo();
+            if(confirm("Deseja limpar todos os dados do servidor?")) {
+                socket.emit('limpar-dados-servidor'); 
             }
         }
 
-        // --- UNIFICAÇÃO E HISTÓRICO ---
         socket.on('atualizar-lista', (data) => {
-            if (Array.isArray(data)) {
-                todosOsDados = [];
-                data.forEach(item => atualizarStatusUnico(item));
-            } else {
-                atualizarStatusUnico(data);
+            todosOsDados = data.professores || [];
+            const listaHist = document.getElementById('lista-historico');
+            listaHist.innerHTML = "";
+            
+            if (data.historico) {
+                data.historico.slice().reverse().forEach(mov => {
+                    const item = document.createElement('div');
+                    item.className = 'hist-item animar-entrada';
+                    item.innerHTML = `
+                        <span class="hist-time-badge">${mov.hora}</span>
+                        <strong>${mov.nome}</strong><br>
+                        <span style="font-size: 0.9em; opacity: 0.8;">
+                            ${mov.de} <span class="seta-movimento">→</span> ${mov.bloco}
+                        </span>
+                    `;
+                    listaHist.appendChild(item);
+                });
             }
             renderizarTudo();
         });
 
-        function atualizarStatusUnico(novoDado) {
-            const index = todosOsDados.findIndex(d => d.nome.trim().toUpperCase() === novoDado.nome.trim().toUpperCase());
-            let blocoAnterior = "-----";
-
-            if (index !== -1) {
-                blocoAnterior = todosOsDados[index].bloco;
-                todosOsDados[index] = novoDado;
-            } else {
-                todosOsDados.push(novoDado);
-            }
-            
-            if (blocoAnterior !== novoDado.bloco) {
-                const lista = document.getElementById('lista-historico');
-                const item = document.createElement('div');
-                item.className = 'hist-item animar-entrada';
-                item.innerHTML = `
-                    <span class="hist-time-badge">${novoDado.hora || '00:00'}</span>
-                    <strong>${novoDado.nome}</strong><br>
-                    <span style="font-size: 0.9em; opacity: 0.8;">
-                        ${blocoAnterior} <span class="seta-movimento">→</span> ${novoDado.bloco}
-                    </span>
-                `;
-                lista.prepend(item);
-            }
-        }
+        function toggleSidebar() { document.getElementById("sidebar").classList.toggle("open"); }
 
         document.addEventListener('click', function(event) {
             const sidebar = document.getElementById('sidebar');
@@ -103,8 +86,6 @@
                 }
             }
         });
-
-        function toggleSidebar() { document.getElementById("sidebar").classList.toggle("open"); }
 
         function toggleTheme() {
             const body = document.body;
@@ -139,68 +120,7 @@
             const filter = document.body.classList.contains('dark-theme') ? "invert(1)" : "invert(0.4)";
             titulo.innerHTML = `
                 <span>${agora.toLocaleDateString('pt-BR')} — ${agora.toLocaleTimeString('pt-BR')}</span>
-                <span>
-                    — <img src="https://cdn-icons-png.flaticon.com/128/2932/2932445.png" style="width: 24px; filter: ${filter};">
-                    ${temperaturaAtual} em ${cidadeAtual}
-                </span>`;
-        }
-
-        function renderizarTudo() {
-            const container = document.getElementById('grid-principal');
-            const isUser = document.body.classList.contains('mode-user');
-            container.innerHTML = "";
-
-            if (isUser) {
-                const grupos = {};
-                todosOsDados.forEach(d => {
-                    const blocoID = d.bloco.toString().toUpperCase().replace("BLOCO", "").trim();
-                    if (!grupos[blocoID]) grupos[blocoID] = [];
-                    grupos[blocoID].push(d);
-                });
-
-                Object.keys(grupos).sort((a, b) => a.localeCompare(b, undefined, {numeric: true})).forEach(id => {
-                    const secao = document.createElement('div');
-                    secao.className = 'secao-bloco';
-                    secao.innerHTML = `<h2 class="titulo-bloco-user">BLOCO ${id}</h2><div class="grid-user"></div>`;
-                    const grid = secao.querySelector('.grid-user');
-                    grupos[id].forEach(data => {
-                        grid.innerHTML += `
-                            <div class="card-user animar-entrada">
-                                <img src="img/${data.id}.jpg" onerror="this.src='https://i.pravatar.cc/150?u=${data.id}'" style="width:75px; height:75px; border-radius:50%; object-fit:cover; border: 2px solid #ddd;">
-                                <div>
-                                    <h3 style="margin:0; font-size:1.2rem;">${data.nome}</h3>
-                                    <p style="margin:5px 0 0 0;">Sala: <strong>${data.sala}</strong></p>
-                                </div>
-                            </div>`;
-                    });
-                    container.appendChild(secao);
-                });
-            } else {
-                const filtro = document.getElementById('filtro-bloco').value.replace("BLOCO", "").trim();
-                const gridAdmin = document.createElement('div');
-                gridAdmin.className = 'grid-admin';
-                todosOsDados.forEach(data => {
-                    const blocoLimpo = data.bloco.toString().toUpperCase().replace("BLOCO", "").trim();
-                    if (filtro === "TODOS" || blocoLimpo === filtro) {
-                        gridAdmin.innerHTML += `
-                            <div class="card-admin animar-entrada">
-                                <div class="card-header-admin">
-                                    <span>ID: ${data.id}</span>
-                                    <span class="hora-badge">🕒 ${data.hora}</span>
-                                </div>
-                                <div style="display:flex; align-items:center; gap:15px; margin-top:10px;">
-                                    <img src="img/${data.id}.jpg" onerror="this.src='https://i.pravatar.cc/150?u=${data.id}'" style="width:85px; height:85px; border-radius:10px; object-fit:cover;">
-                                    <div>
-                                        <h3 style="margin:0;">${data.nome}</h3>
-                                        <p style="margin:5px 0;">Sala: ${data.sala}</p>
-                                        <p style="margin:0;">Bloco: ${data.bloco}</p>
-                                    </div>
-                                </div>
-                            </div>`;
-                    }
-                });
-                container.appendChild(gridAdmin);
-            }
+                <span>— <img src="https://cdn-icons-png.flaticon.com/128/2932/2932445.png" style="width: 24px; filter: ${filter};"> ${temperaturaAtual} em ${cidadeAtual}</span>`;
         }
 
         async function buscarClima() {
@@ -215,11 +135,47 @@
                         const dG = await resG.json();
                         cidadeAtual = dG.address.city || dG.address.town || "Localidade";
                         atualizarRelogio();
-                    } catch (e) { console.log("Erro clima"); }
+                    } catch (e) {}
                 });
             }
         }
 
+        function renderizarTudo() {
+            const container = document.getElementById('grid-principal');
+            const isUser = document.body.classList.contains('mode-user');
+            container.innerHTML = "";
+
+            if (isUser) {
+                const grupos = {};
+                todosOsDados.forEach(d => {
+                    const b = d.bloco.toString().toUpperCase().replace("BLOCO", "").trim();
+                    if (!grupos[b]) grupos[b] = [];
+                    grupos[b].push(d);
+                });
+
+                Object.keys(grupos).sort().forEach(id => {
+                    const secao = document.createElement('div');
+                    secao.className = 'secao-bloco';
+                    secao.innerHTML = `<h2 class="titulo-bloco-user">BLOCO ${id}</h2><div class="grid-user"></div>`;
+                    const grid = secao.querySelector('.grid-user');
+                    grupos[id].forEach(data => {
+                        grid.innerHTML += `<div class="card-user animar-entrada"><img src="img/${data.id}.jpg" onerror="this.src='https://i.pravatar.cc/150?u=${data.id}'" style="width:75px;height:75px;border-radius:50%;object-fit:cover;border: 2px solid #ddd;"><div><h3 style="margin:0;font-size:1.2rem;">${data.nome}</h3><p style="margin:5px 0 0 0;">Sala: <strong>${data.sala}</strong></p></div></div>`;
+                    });
+                    container.appendChild(secao);
+                });
+            } else {
+                const filtro = document.getElementById('filtro-bloco').value.replace("BLOCO", "").trim();
+                const gridAdmin = document.createElement('div');
+                gridAdmin.className = 'grid-admin';
+                todosOsDados.forEach(data => {
+                    const blocoLimpo = data.bloco.toString().toUpperCase().replace("BLOCO", "").trim();
+                    if (filtro === "TODOS" || blocoLimpo === filtro) {
+                        gridAdmin.innerHTML += `<div class="card-admin animar-entrada"><div class="card-header-admin"><span>ID: ${data.id}</span><span class="hora-badge">🕒 ${data.hora}</span></div><div style="display:flex;align-items:center;gap:15px;margin-top:10px;"><img src="img/${data.id}.jpg" onerror="this.src='https://i.pravatar.cc/150?u=${data.id}'" style="width:85px;height:85px;border-radius:10px;object-fit:cover;"><div><h3 style="margin:0;">${data.nome}</h3><p style="margin:5px 0;">Sala: ${data.sala}</p><p style="margin:0;">Bloco: ${data.bloco}</p></div></div></div>`;
+                    }
+                });
+                container.appendChild(gridAdmin);
+            }
+        }
         window.onload = () => { renderizarTudo(); };
     </script>
 </body>
